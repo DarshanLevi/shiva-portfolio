@@ -1,0 +1,19 @@
+/*
+ * Design tokens: the one place for colour, type and motion values.
+ * Palette is monochrome, per reference/ (black, white, greys). The cyberpunk accent is still TBD.
+ */
+:root {
+  /* Colour */
+  --color-bg: #060606;
+  --color-fg: #f2f2f2;
+  --color-muted: #8c8c8c;
+  --color-line: rgb(255 255 255 / 0.12);
+
+  /* Type: system stacks until the fonts are chosen in the hero step */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}

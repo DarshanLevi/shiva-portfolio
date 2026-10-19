@@ -1,0 +1,52 @@
+---
+// Hero: TEMPLATE. Placeholder layout and copy (from reference/2nd_ref_hero-page.jpeg) so the
+// loader has something to reveal. The real hero gets designed in the next step.
+---
+
+<section class="hero" aria-labelledby="hero-title">
+  <div class="hero__inner">
+    <p class="hero__tag" data-reveal style="--i: 0">[ Hero · template ]</p>
+    <h1 class="hero__title" id="hero-title" data-reveal style="--i: 1">Ideas made visible.</h1>
+    <p class="hero__sub" data-reveal style="--i: 2">Branding · Design · Motion</p>
+  </div>
+</section>
+
+<style>
+  .hero {
+    display: grid;
+    align-items: center;
+    min-height: 100vh;
+    min-height: 100svh;
+    padding: clamp(1.5rem, 6vw, 6rem);
+  }
+
+  .hero__inner {
+    width: 100%;
+    max-width: 75rem;
+    margin-inline: auto;
+  }
+
+  .hero__tag {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .hero__title {
+    max-width: 8ch;
+    margin-top: 1.5rem;
+    font-size: clamp(3.25rem, 11vw, 8.5rem);
+    font-weight: 600;
+    line-height: 0.92;
+    letter-spacing: -0.045em;
+  }
+
+  .hero__sub {
+    margin-top: 2rem;
+    font-size: clamp(0.875rem, 1.3vw, 1.0625rem);
+    letter-spacing: 0.28em;
+    color: var(--color-muted);
+  }
+</style>

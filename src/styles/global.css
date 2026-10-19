@@ -1,0 +1,76 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  color-scheme: dark;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100svh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/*
+ * Page entrance. `js-loading` is set on <html> before first paint (BaseLayout) and the
+ * loader adds `is-loaded` as it fades out. Elements marked [data-reveal] wait for that,
+ * then rise in, staggered by their --i index. Without JS they are simply visible.
+ */
+html.js-loading {
+  overflow: hidden;
+}
+
+.js-loading:not(.is-loaded) [data-reveal] {
+  opacity: 0;
+  transform: translateY(1.25rem);
+}
+
+.is-loaded [data-reveal] {
+  transition:
+    opacity 900ms var(--ease-out),
+    transform 1100ms var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 110ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js-loading:not(.is-loaded) [data-reveal] {
+    transform: none;
+  }
+
+  .is-loaded [data-reveal] {
+    transition: opacity 600ms linear;
+  }
+}

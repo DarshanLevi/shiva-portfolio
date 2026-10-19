@@ -1,0 +1,41 @@
+---
+import '../styles/tokens.css';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+// TODO(content): confirm name, title and description from contents/.
+const { title = 'Shiva — Portfolio', description = 'Portfolio — graphic design, branding and video editing.' } =
+  Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#060606" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!--
+      Loader bootstrap. Runs before first paint so the loader is on screen immediately.
+      Failsafe: if the loader script never finishes (e.g. a JS error), reveal the page anyway.
+      Without JS this never runs, so the loader stays hidden and the page is visible.
+    -->
+    <script is:inline>
+      document.documentElement.classList.add('js-loading');
+      setTimeout(function () {
+        document.documentElement.classList.remove('js-loading');
+      }, 15000);
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
