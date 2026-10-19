@@ -221,7 +221,8 @@ reference/  contents/        user inputs (read-only; tracked in git)
 
 - Windows 11 · VS Code · PowerShell 5.1 + Git Bash · project folder lives inside **OneDrive** (syncing `node_modules`/`dist` can be slow or lock files; consider pausing sync or excluding them if that bites)
 - Session 1: Node v24.16.0 · pnpm 10.33.0. **Session 2 copy (fresh clone): Node v24.13.0 · pnpm 11.5.3**. pnpm 11 enforces a 1-day minimum package age by default — one reason we moved to npm (D13). npm 10.2.5 · git 2.42.0 (no yarn/bun) · Python 3.12 (no Pillow) · no `gh` CLI
-- Git: branch `main` (2 commits, 2026-10-19), **pushed**: `origin/main` = `7ffb4f5` · `origin` → <https://github.com/DarshanLevi/shiva-portfolio.git> · `reference/` tracked; `contents/` not in git (empty folders aren't tracked)
+- Git identity for this repo (set locally, session 2): **DarshanLevi <s2darshanrider@gmail.com>**. This machine's global identity is a work account (`darshanscodesoftwares`), so on a new clone run `git config user.name "DarshanLevi"` and `git config user.email "s2darshanrider@gmail.com"` before committing.
+- Git: branch `main`, `origin/main` = `7ffb4f5`; local commit `58c1cea` (npm switch + hero analysis) not pushed yet · `origin` → <https://github.com/DarshanLevi/shiva-portfolio.git> · `reference/` tracked; `contents/` not in git (empty folders aren't tracked)
 
 ## Roadmap
 
@@ -312,3 +313,4 @@ reference/  contents/        user inputs (read-only; tracked in git)
 - **2026-10-19** — Session 2: full analysis of both hero refs, with a recommendation (ref 2 leads); recorded the fresh-clone state (pushed, no `contents/`, Node 24.13 / pnpm 11.5.3) and the pnpm 11 install block; Open questions 10–11 updated. No code changes.
 - **2026-10-19** — Session 2: user installed with npm (`npm i astro` → `package-lock.json`) and the dev server runs; user renamed `reference/hero-page.jpeg` → `reference/1st_ref_hero-page.jpeg` (identical file); references updated here.
 - **2026-10-19** — Switched to npm (D13): removed `pnpm-lock.yaml`, commands in this file now use npm.
+- **2026-10-19** — Committed (`58c1cea`); set this repo's git identity to DarshanLevi <s2darshanrider@gmail.com> (local only) and re-authored that unpushed commit.
