@@ -3,7 +3,7 @@
 Single source of truth for this project: brief, rules, design decisions, progress — and the history needed to pick up exactly where the last session stopped.
 
 > **Rule 0 (user, 2026-10-19): update this file at the end of every task.** Refresh **Now**, the **Task board**, **Decisions**, the **Changelog**, and any section the task touched. A task isn't done until this file reflects it.
-
+>
 > **Now:** Loader ✅ and hero *template* ✅, committed to `main`. **Next: design the real hero** — see **Next up**.
 
 ---
@@ -12,7 +12,7 @@ Single source of truth for this project: brief, rules, design decisions, progres
 
 1. **Run it:** `pnpm install` (first time on a machine; needs Node ≥ 22.22) → `pnpm dev` → open <http://localhost:4321>. The bulb loader plays for ~4 s, then fades into the hero template.
 2. **Read:** **Working with the user** → **Components** (what exists) → **Next up** → **Open questions**.
-3. **Inputs:** `reference/` exists only on the original machine — it is not in git (Open question 5). Elsewhere, ask the user to copy it over or commit it; meanwhile the **Inputs inventory** describes each image.
+3. **Inputs:** `reference/` (the design images) is in git; `contents/` is still empty. The **Inputs inventory** describes each image.
 4. **History:** **Session history** records what happened and why, with the user's own words for each spec.
 
 ## Working with the user
@@ -22,7 +22,7 @@ Single source of truth for this project: brief, rules, design decisions, progres
 - **Section by section.** The user drops references for one section, we build it, then move on (Loader → Hero → …). Specs arrive as short, casual messages — capture them in the user's words (see **Session history**) and confirm interpretations that change the design.
 - **Minimal base first; motion and cyberpunk accents last.**
 - **Verify visually** before calling UI work done (see **Verification**).
-- **Git:** commit or push only when asked. Don't commit `reference/` or `contents/` until the user decides (Open question 5).
+- **Git:** commit or push only when asked. Input files are tracked too (user, 2026-10-19: "images too") — commit new `reference/` / `contents/` files along with the work that uses them, but flag anything that looks private (phone number, address, ID documents) first.
 - **Rule 0:** update this file at the end of every task.
 
 ## Session protocol (Claude)
@@ -56,18 +56,19 @@ Single source of truth for this project: brief, rules, design decisions, progres
 ## Inputs (user-provided)
 
 | Folder | Purpose | Put in it |
-|---|---|---|
+| --- | --- | --- |
 | `reference/` | Design inspiration | Screenshots of sites/UI you like, `links.md` for URLs, palettes, fonts. Add a line per item on *what* you like. For motion, give the live link + a one-line description — Claude can read images and PDFs, not video playback. |
 | `contents/` | Content — the facts | Resume/CV, bio, projects (name, problem, your role, stack, outcome, links, images), experience, skills, socials/contact, hero photo, preferred tone of voice. |
 
-**Rules**
+### Rules for inputs
+
 - References are inspiration, not a source: don't copy code, assets or copy from them; respect font/image licenses.
 - Content comes only from `contents/` (or copy the user put in their own reference mockups, marked as placeholder). Never invent facts, metrics, employers, dates or links — mark gaps `TODO(content)` and list them in **Open questions**.
 
 ### Inputs inventory
 
 | File | What it is | Takeaway | Used for | Analyzed |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `reference/Loading.jpeg` | Loader ref (400×300) | Minimal bulb: glowing open arc (the glass) + 2 grey threads + nub, near-black bg, soft room glow, faint vertical grain | Loader (geometry measured from pixels) | 2026-10-19 |
 | `reference/hero-page.jpeg` | Hero ref | Black bg; B&W portrait on the right; left list "Graphic Design / Brandings / Video Editing" with vertical hairline markers; wide-tracked caps | Hero (next) | 2026-10-19 (skim) |
 | `reference/2nd_ref_hero-page.jpeg` | Hero ref | Hairline inset frame + left rail (01–03 services, line icons, dividers); huge tight sans "Ideas made visible."; tracked subline "Branding · Design · Motion"; line-to-circle-dot HUD marker; caption "Turning ideas into impact"; B&W portrait right | Hero (next) | 2026-10-19 (skim) |
@@ -82,14 +83,14 @@ Single source of truth for this project: brief, rules, design decisions, progres
 - **Pinch motifs seen so far:** glow (bulb), line-to-circle-dot HUD marker, mono labels.
 - **Copy seen in references** (placeholder until confirmed in `contents/`): "Ideas made visible." · "Branding · Design · Motion" · "Turning ideas into impact" · services Graphic Design, Branding, Video Editing.
 
-## Content map — _pending: `contents/` is empty_
+## Content map — *pending: `contents/` is empty*
 
 ## Design system — partial
 
 Tokens live in `src/styles/tokens.css`.
 
 | Token | Value | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `--color-bg` | `#060606` | site background |
 | `--color-fg` | `#f2f2f2` | text |
 | `--color-muted` | `#8c8c8c` | secondary text |
@@ -122,7 +123,7 @@ Tokens live in `src/styles/tokens.css`.
 - **Responsive:** 320px → 2560px+, no horizontal scroll, alignment holds at every breakpoint.
 - **SEO/sharing:** one `h1`, logical headings, meta + Open Graph image, sitemap, favicons.
 
-## Site structure — _draft, confirm from `contents/`_
+## Site structure — *draft, confirm from `contents/`*
 
 0. **Loader** ✅
 1. **Hero** — name/positioning, services, portrait ← next
@@ -157,7 +158,7 @@ How the stack was explained to the user — reuse this framing.
 ## Commands
 
 | Command | What |
-|---|---|
+| --- | --- |
 | `pnpm install` | install dependencies (first run on a machine) |
 | `pnpm dev` | dev server → <http://localhost:4321> |
 | `pnpm build` | static build → `dist/` |
@@ -166,7 +167,7 @@ How the stack was explained to the user — reuse this framing.
 
 ## Project structure
 
-```
+```text
 CLAUDE.md                    this file — tracker + handoff
 astro.config.mjs             Astro config (dev toolbar off)
 package.json, pnpm-lock.yaml dependencies (Astro; @astrojs/check + TypeScript 6 for `pnpm check`)
@@ -179,7 +180,7 @@ src/
   styles/tokens.css          design tokens
   styles/global.css          reset, base, data-reveal entrance system
 public/favicon.svg           bulb icon
-reference/  contents/        user inputs (read-only; not in git)
+reference/  contents/        user inputs (read-only; tracked in git)
 ```
 
 ## Verification
@@ -193,12 +194,12 @@ reference/  contents/        user inputs (read-only; not in git)
 
 - Windows 11 · VS Code · PowerShell 5.1 + Git Bash
 - Node v24.16.0 · pnpm 10.33.0 · npm 10.2.5 · git 2.42.0 (no yarn/bun) · Python 3.12 (no Pillow)
-- Git: branch `main`, initial commit 2026-10-19, **not pushed** · `origin` → <https://github.com/DarshanLevi/shiva-portfolio.git> · `reference/` + `contents/` untracked on purpose (Open question 5)
+- Git: branch `main` (2 commits, 2026-10-19), **not pushed** · `origin` → <https://github.com/DarshanLevi/shiva-portfolio.git> · `reference/` tracked; `contents/` empty (git skips empty folders)
 
 ## Roadmap
 
 | Step | Status |
-|---|---|
+| --- | --- |
 | Setup — tracker, stack, scaffold | ✅ 2026-10-19 |
 | Loader | ✅ 2026-10-19 |
 | Hero | ⏭ next — references ready |
@@ -215,6 +216,7 @@ reference/  contents/        user inputs (read-only; not in git)
 - [x] Loader: bulb, looping curved light bar, min delay, lights-on exit, reduced motion — 2026-10-19
 - [x] Hero template for the loader to reveal — 2026-10-19
 - [x] Full handoff in `CLAUDE.md` + initial commit — 2026-10-19
+- [x] Commit the reference images (user: "images too") — 2026-10-19
 - [ ] Hero design (from the two hero refs) ← next
 - [ ] Choose fonts; lock type scale + spacing/grid
 - [ ] Remaining sections
@@ -224,7 +226,7 @@ reference/  contents/        user inputs (read-only; not in git)
 ## Decisions log
 
 | # | Date | Decision | Why |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | D1 | 2026-10-19 | Modern + minimal base; cyberpunk only as an accent | User brief |
 | D2 | 2026-10-19 | `CLAUDE.md` is the single tracker (status, tasks, decisions, changelog) | User request |
 | D3 | 2026-10-19 | No design/code until references are in | User request |
@@ -235,7 +237,8 @@ reference/  contents/        user inputs (read-only; not in git)
 | D8 | 2026-10-19 | Pin TypeScript ^6 | `@astrojs/check` peer range |
 | D9 | 2026-10-19 | Rule 0: update `CLAUDE.md` at the end of every task | User instruction |
 | D10 | 2026-10-19 | Keep Astro even with directional navigation + possible 3D planned; add React islands / Three.js only when a feature needs them | User asked if Astro can handle heavier work; it can (view transitions, persistent islands, React/Three.js) without making the whole site heavy |
-| D11 | 2026-10-19 | First commit leaves out `reference/` + `contents/` | They hold the owner's photo and a third-party image, and the repo has a GitHub remote; adding them later is easy, removing them after a push isn't |
+| D11 | 2026-10-19 | First commit leaves out `reference/` + `contents/` (superseded by D12) | They hold the owner's photo and a third-party image, and the repo has a GitHub remote; adding them later is easy, removing them after a push isn't |
+| D12 | 2026-10-19 | Commit the reference images too | User: "images too" — so the project can be continued from anywhere |
 
 ## Open questions
 
@@ -243,12 +246,12 @@ reference/  contents/        user inputs (read-only; not in git)
 2. **Theme** — dark only (all references are dark), or dark + light toggle?
 3. **Shape** — one long page, or multi-page with per-project case studies?
 4. **Hosting & domain** — already owned? Preference?
-5. **Git: inputs** — `reference/` + `contents/` were left out of the first commit. Commit them? They're only needed in git to continue on another machine or in Claude on the web. Is the GitHub repo private?
+5. ~~**Git: inputs**~~ — resolved: reference images committed (D12).
 6. **Extras** — blog/writing? resume PDF download? sound? terminal easter egg? hard don'ts? (Directional navigation and possible 3D are already planned — see Tech stack.)
 7. **Loader** — play on every visit, or once per session (skip on reloads/back-nav)? Currently every load. Timing OK (≈4.3 s on screen + 0.8 s fade)?
 8. **Hero** — the real portrait photo (high-res) and final copy/services.
 9. **Fonts** — any preference or licensed fonts? (References look like a clean geometric grotesk.)
-10. **Git: push** — push `main` to GitHub? Needed to continue from another machine or Claude on the web.
+10. **Git: push** — push `main` to GitHub? Needed to continue from another machine or Claude on the web. If the GitHub repo is public, pushing also publishes the reference images (the owner's photo and a third-party loader image).
 
 ## Session history
 
@@ -260,6 +263,7 @@ reference/  contents/        user inputs (read-only; not in git)
 4. "wait what is astro?" → explained; the user then said: "we may go heavier… directional navigation while navigating menu with projects… may go with some 3d too in future… do you think astro can handle this? if yes its ok" → confirmed it can (D10); user OK'd.
 5. Asked again for an understandable explanation of why Astro and what language it's built in → **Tech in plain words**.
 6. "put it all we done as update to claude.md and commit, so I can … continue this project with details filled in at start rather than a fresh start" → expanded this file into a full handoff; first commit on `main` (not pushed; `reference/` excluded — D11).
+7. "images too" → committed the reference images as well (D12). Still not pushed.
 
 ## Changelog
 
@@ -267,3 +271,4 @@ reference/  contents/        user inputs (read-only; not in git)
 - **2026-10-19** — Scaffolded Astro 7.4 + TS (strict); tokens + global CSS; `BaseLayout` with loader bootstrap; **bulb loader** (geometry measured from `reference/Loading.jpeg`, glow/grain calibrated against it); **hero template**; bulb favicon. Verified in real time: desktop, phone, reduced motion, dev + production build. Added Rule 0 (user).
 - **2026-10-19** — User confirmed Astro after asking whether it can handle heavier work; recorded the plan for directional navigation (view transitions) and future 3D (Three.js / React islands) — D10.
 - **2026-10-19** — Expanded `CLAUDE.md` into a full handoff (Start here, Working with the user, Next up, Tech in plain words, Session history); initial commit on `main` with the code + this file (`reference/` excluded — D11).
+- **2026-10-19** — Committed the reference images at the user's request (D12); this file updated to match.
