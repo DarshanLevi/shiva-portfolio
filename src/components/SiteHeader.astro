@@ -1,0 +1,86 @@
+---
+/**
+ * Top bar shared by every page: the name (links home) with a small glowing ring as its mark,
+ * and, on inner pages, a back link on the right.
+ * It keeps the same view-transition name on every page, so it holds still while pages change.
+ */
+interface Props {
+  /** Show a back link on the right: `true` → "← Index" (home), or a specific target. */
+  back?: boolean | { href: string; label: string };
+}
+
+const { back = false } = Astro.props;
+const backLink = back === true ? { href: '/', label: 'Index' } : back || null;
+---
+
+<header class="site-header">
+  <a class="site-header__name" href="/">
+    <span class="site-header__mark" aria-hidden="true"></span>
+    <!-- TODO(content): confirm the name from contents/. -->
+    Shiva
+  </a>
+  {
+    backLink && (
+      <a class="site-header__end site-header__back" href={backLink.href}>
+        <span aria-hidden="true">←</span> {backLink.label}
+      </a>
+    )
+  }
+</header>
+
+<style>
+  .site-header {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--gutter);
+    view-transition-name: site-header;
+  }
+
+  .site-header__name {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--color-fg);
+    text-decoration: none;
+  }
+
+  /* The loader's ring, in miniature. */
+  .site-header__mark {
+    width: 0.7rem;
+    height: 0.7rem;
+    border: 2px solid var(--color-fg);
+    border-radius: 50%;
+    box-shadow: var(--glow);
+  }
+
+  .site-header__end {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .site-header__back {
+    text-decoration: none;
+    transition: color 200ms;
+  }
+
+  .site-header__back:hover,
+  .site-header__back:focus-visible {
+    color: var(--color-fg);
+  }
+
+  .site-header a:focus-visible {
+    outline: 1px solid var(--color-fg);
+    outline-offset: 0.4rem;
+    border-radius: 2px;
+  }
+</style>

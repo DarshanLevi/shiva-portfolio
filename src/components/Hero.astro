@@ -1,52 +1,724 @@
 ---
-// Hero: TEMPLATE. Placeholder layout and copy (from reference/2nd_ref_hero-page.jpeg) so the
-// loader has something to reveal. The real hero gets designed in the next step.
+/**
+ * Hero. The loader's ring carries on into the page: a large glowing ring frames a B&W
+ * portrait like an eclipse, on the right; the services are a menu on the left. A service with
+ * its own page is a link (see src/data/services.ts). Phones stack: ring above, menu below.
+ *
+ * Hovering a menu item turns its line into a "lifeline" (a flat trace with two tiny
+ * heartbeats) that draws itself left to right in a second. A small rainbow-tinted head rides
+ * its tip, and a matching rainbow band passes through the word below in step with it; both
+ * leave at the end. Then faint rainbow colours keep travelling along the line, with a tiny
+ * glitch now and then.
+ *
+ * After the loader: the ring draws itself from the bottom, clockwise (the loader's fill, at
+ * hero size), the haze rises with it, the portrait fades up inside, and a small light then
+ * keeps orbiting the ring. When the loader is skipped (arriving from another page), it is
+ * all simply there.
+ */
+import { Image } from 'astro:assets';
+import Dust from './Dust.astro';
+import SiteHeader from './SiteHeader.astro';
+import { services } from '../data/services';
+// TODO(content): placeholder portrait (Unsplash, Hadi Basirat, converted to B&W). Replace with the owner's photo.
+import portrait from '../assets/hero-portrait-placeholder.jpg';
+
+// The lifeline: viewBox 480×12, baseline y=6, stretched to the item's width. Each beat is a
+// tiny ECG complex (P bump, QRS spike of ±r, T bump); the ups and downs stay within ~3px.
+const beat = (x: number, r: number) =>
+  `H${x} L${x + 4} 5 L${x + 8} 6 H${x + 13} L${x + 15} 7 L${x + 18} ${6 - r} L${x + 21} ${6 + r * 0.6} L${x + 23} 6 H${x + 30} L${x + 36} 5 L${x + 42} 6`;
+const lifeline = `M0 6 ${beat(118, 3.2)} ${beat(318, 2.2)} H480`;
+
+// Rainbow that travels along the lifeline: one dashed copy of the line per colour. Each colour
+// is a band of BAND (in path lengths, the whole line = 1), the pattern repeats every PERIOD,
+// and every copy starts one band later, so together they tile the line seamlessly.
+const RAINBOW = ['#ff2bd6', '#ff5c5c', '#ffe94d', '#3dff8b', '#22e4ff', '#4d6bff'];
+const BAND = 0.03;
+const PERIOD = BAND * RAINBOW.length;
+const bands = RAINBOW.map((color, k) => {
+  const from = +(-k * BAND).toFixed(3);
+  return `stroke: ${color}; stroke-dasharray: ${BAND} ${+(PERIOD - BAND).toFixed(3)}; --from: ${from}; --to: ${+(from - PERIOD).toFixed(3)}`;
+});
+
+// The arrival head: a small white tip (TIP long) riding the drawing tip of the line, with a
+// short rainbow trail behind it (TRAIL per colour, cyan nearest the tip, magenta at the tail).
+// A dash of length L ending at the tip p sits at [p - L, p]: its offset runs from L to L - 1.
+const TIP = 0.012;
+const TRAIL = 0.018;
+const TRAIL_COLORS = ['#22e4ff', '#3dff8b', '#ffe94d', '#ff5c5c', '#ff2bd6'];
+const dashRun = (length: number, gapBefore: number) => {
+  const from = +(gapBefore + length).toFixed(3);
+  return `stroke-dasharray: ${length} 3; --from: ${from}; --to: ${+(from - 1).toFixed(3)}`;
+};
+const headTrail = TRAIL_COLORS.map((color, k) => `stroke: ${color}; ${dashRun(TRAIL, TIP + k * TRAIL)}`);
+const headTip = dashRun(TIP, 0);
 ---
 
 <section class="hero" aria-labelledby="hero-title">
-  <div class="hero__inner">
-    <p class="hero__tag" data-reveal style="--i: 0">[ Hero · template ]</p>
-    <h1 class="hero__title" id="hero-title" data-reveal style="--i: 1">Ideas made visible.</h1>
-    <p class="hero__sub" data-reveal style="--i: 2">Branding · Design · Motion</p>
+  <Dust />
+  <SiteHeader />
+  <!-- TODO(content): confirm the name. -->
+  <h1 class="sr-only" id="hero-title">Shiva: graphic design, branding and video editing</h1>
+
+  <div class="hero__stage">
+    <div class="hero__haze" aria-hidden="true"></div>
+    <div class="hero__photo">
+      <Image
+        class="hero__portrait"
+        src={portrait}
+        alt="Placeholder portrait"
+        widths={[400, 600, 800, 1200]}
+        sizes="(max-aspect-ratio: 4/5) 76vw, 34rem"
+        loading="eager"
+        fetchpriority="high"
+      />
+    </div>
+    <svg class="hero__ring" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="hero-glow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="1.4" result="halo"></feGaussianBlur>
+          <feGaussianBlur in="SourceGraphic" stdDeviation="0.4" result="bloom"></feGaussianBlur>
+          <feMerge>
+            <feMergeNode in="halo"></feMergeNode>
+            <feMergeNode in="bloom"></feMergeNode>
+            <feMergeNode in="SourceGraphic"></feMergeNode>
+          </feMerge>
+        </filter>
+        <!-- Glow for the menu lifelines (used by the SVGs in the menu below). -->
+        <filter id="trace-glow" filterUnits="userSpaceOnUse" x="-10" y="-10" width="500" height="32">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="1.3" result="halo"></feGaussianBlur>
+          <feMerge>
+            <feMergeNode in="halo"></feMergeNode>
+            <feMergeNode in="SourceGraphic"></feMergeNode>
+          </feMerge>
+        </filter>
+      </defs>
+      <!-- Rotated so the path starts at the bottom and runs clockwise, like the loader. -->
+      <g transform="rotate(90 50 50)">
+        <circle class="hero__track" cx="50" cy="50" r="48"></circle>
+        <circle class="hero__line" cx="50" cy="50" r="48" pathLength="1" filter="url(#hero-glow)"></circle>
+      </g>
+      <g class="hero__orbit">
+        <circle class="hero__dot" cx="50" cy="98" r="0.9" filter="url(#hero-glow)"></circle>
+      </g>
+    </svg>
   </div>
+
+  <nav class="hero__services" aria-label="Services">
+    <ul>
+      {
+        services.map((service, i) => {
+          const Item = service.href ? 'a' : 'div';
+          return (
+            <li style={`--i: ${i}`}>
+              <Item class:list={['service', { 'service--live': service.href }]} href={service.href}>
+                <span class="service__name" style={`view-transition-name: service-${service.slug}`}>
+                  {service.name}
+                </span>
+                <span class="service__scan" aria-hidden="true">
+                  <span class="service__name">{service.name}</span>
+                </span>
+                <span class="service__glitch" aria-hidden="true" />
+                <svg
+                  class="service__lifeline"
+                  viewBox="0 0 480 12"
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path class="trace trace--magenta" d={lifeline} pathLength="1" />
+                  <path class="trace trace--cyan" d={lifeline} pathLength="1" />
+                  <path class="trace trace--main" d={lifeline} pathLength="1" filter="url(#trace-glow)" />
+                  <g class="service__rainbow">
+                    {bands.map((style) => (
+                      <path class="band" d={lifeline} pathLength="1" style={style} />
+                    ))}
+                  </g>
+                  <g class="service__head" filter="url(#trace-glow)">
+                    {headTrail.map((style) => (
+                      <path class="head" d={lifeline} pathLength="1" style={style} />
+                    ))}
+                    <path class="head head--tip" d={lifeline} pathLength="1" style={headTip} />
+                  </g>
+                </svg>
+              </Item>
+            </li>
+          );
+        })
+      }
+    </ul>
+  </nav>
 </section>
 
 <style>
+  /* Two columns: the services menu on the left, the ring + portrait on the right. */
   .hero {
+    --ring: min(clamp(15rem, 52vmin, 34rem), 44vw); /* ring diameter */
+
+    position: relative;
     display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
     align-items: center;
+    column-gap: var(--gutter);
     min-height: 100vh;
-    min-height: 100svh;
-    padding: clamp(1.5rem, 6vw, 6rem);
+    min-height: max(100svh, 36rem);
+    padding: calc(var(--gutter) + 3rem) var(--gutter) var(--gutter); /* top clears the header */
+    overflow: hidden;
+    isolation: isolate;
   }
 
-  .hero__inner {
+  /* ── Stage: haze, portrait, ring ─────────────────────────────── */
+
+  .hero__stage {
+    position: relative;
+    grid-area: 1 / 2;
+    justify-self: center;
+    width: var(--ring);
+    aspect-ratio: 1;
+  }
+
+  .hero__haze {
+    position: absolute;
+    inset: -70%;
+    background: radial-gradient(circle, rgb(255 255 255 / 0.075) 0%, rgb(255 255 255 / 0.03) 30%, transparent 62%);
+    transition: filter 600ms var(--ease-out);
+  }
+
+  /* Portrait: a circle inside the ring, vignetted so the face emerges from the dark. */
+  .hero__photo {
+    position: absolute;
+    inset: 9%;
+    border-radius: 50%;
+    overflow: hidden;
+    -webkit-mask-image: radial-gradient(circle closest-side, #000 72%, transparent 100%);
+    mask-image: radial-gradient(circle closest-side, #000 72%, transparent 100%);
+  }
+
+  .hero__portrait {
     width: 100%;
-    max-width: 75rem;
-    margin-inline: auto;
+    height: 100%;
+    object-fit: cover;
+    object-position: 46% 38%;
+    scale: 1.12;
   }
 
-  .hero__tag {
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--color-muted);
+  .hero__ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
   }
 
-  .hero__title {
-    max-width: 8ch;
-    margin-top: 1.5rem;
-    font-size: clamp(3.25rem, 11vw, 8.5rem);
+  .hero__track,
+  .hero__line {
+    fill: none;
+    stroke-width: 0.55;
+    stroke-linecap: round; /* closes the seam where the ring starts and ends */
+  }
+
+  .hero__track {
+    stroke: rgb(255 255 255 / 0.08);
+  }
+
+  .hero__line {
+    stroke: #fff;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+
+  .hero__dot {
+    fill: #fff;
+  }
+
+  .hero__orbit {
+    transform-box: view-box;
+    transform-origin: 50% 50%;
+    animation: hero-orbit 18s linear infinite;
+  }
+
+  @keyframes hero-orbit {
+    to {
+      rotate: 360deg;
+    }
+  }
+
+  /* Hovering a menu item (or focusing the live one) turns the room light up a little. */
+  .hero:has(.service:hover, .service--live:focus-visible) .hero__haze {
+    filter: brightness(1.8);
+  }
+
+  /* ── Services ─────────────────────────────────────────────────── */
+
+  /* Menu (after reference/web.jpg.jpeg): small, bold, widely tracked capitals with a square
+     bullet, set far apart, no lines. Starts ~9% in from the left, as in the reference. */
+  .hero__services {
+    position: relative;
+    z-index: 2;
+    grid-area: 1 / 1;
+    max-width: 30rem;
+    margin-left: max(0px, calc(9vw - var(--gutter)));
+  }
+
+  .hero__services ul {
+    display: grid;
+    row-gap: clamp(2rem, 16vh, 11rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .service {
+    position: relative;
+    display: block;
+    padding-block: 0.9rem;
+    color: var(--color-fg);
+    text-decoration: none;
+  }
+
+  .service__name {
+    display: flex;
+    align-items: center;
+    width: fit-content;
+    font-size: clamp(0.95rem, 1.5vw, 1.75rem);
     font-weight: 600;
-    line-height: 0.92;
-    letter-spacing: -0.045em;
+    line-height: 1.1;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
   }
 
-  .hero__sub {
-    margin-top: 2rem;
-    font-size: clamp(0.875rem, 1.3vw, 1.0625rem);
-    letter-spacing: 0.28em;
-    color: var(--color-muted);
+  .service__name::before {
+    content: '';
+    flex: none;
+    width: 0.28em;
+    height: 0.28em;
+    margin-right: 1.25em;
+    background: currentColor;
+    transition: box-shadow 300ms var(--ease-out);
+  }
+
+  .service:hover .service__name::before,
+  .service--live:focus-visible .service__name::before {
+    box-shadow: var(--glow);
+  }
+
+  /* ── Hover: lifeline + rainbow glitch, on the item's top line ── */
+
+  .service__lifeline,
+  .service__glitch {
+    position: absolute;
+    inset: -6px 0 auto;
+    height: 12px;
+    pointer-events: none;
+  }
+
+  .service__lifeline {
+    width: 100%;
+    overflow: visible;
+  }
+
+  .trace {
+    fill: none;
+    stroke-width: 1.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1 2;
+    stroke-dashoffset: 1;
+    opacity: 0;
+    /* On leave: fade out, then reset the drawing. */
+    transition:
+      opacity 250ms var(--ease-out),
+      stroke-dashoffset 0s 250ms;
+  }
+
+  .trace--main {
+    stroke: #fff;
+  }
+
+  /* Ghosts: hairlines, faint, ~1px off. All glitching is kept minimal. */
+  .trace--magenta {
+    stroke: #ff2bd6;
+    stroke-width: 0.6;
+  }
+
+  .trace--cyan {
+    stroke: #22e4ff;
+    stroke-width: 0.6;
+  }
+
+  /* The rainbow copies of the line (see `bands` above); they fade in once the line is drawn.
+     Kept deliberately faint: a hairline, no glow, about a third of full strength. */
+  .service__rainbow {
+    opacity: 0;
+    transition: opacity 250ms var(--ease-out);
+  }
+
+  .band {
+    fill: none;
+    stroke-width: 0.8;
+    stroke-linejoin: round;
+    stroke-dashoffset: var(--from);
+  }
+
+  /* Thin rainbow scanline slices that flicker around the line for a moment. */
+  .service__glitch {
+    inset: -3px 0 auto;
+    height: 6px;
+    background: linear-gradient(90deg, #ff2bd6, #ffe94d 22%, #3dff8b 42%, #22e4ff 62%, #4d6bff 80%, #ff2bd6);
+    -webkit-mask-image: repeating-linear-gradient(to bottom, #000 0 1px, transparent 1px 3px);
+    mask-image: repeating-linear-gradient(to bottom, #000 0 1px, transparent 1px 3px);
+    mix-blend-mode: screen;
+    opacity: 0;
+  }
+
+  .service:hover .trace,
+  .service--live:focus-visible .trace {
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1600ms cubic-bezier(0.37, 0, 0.63, 1);
+  }
+
+  /* The white line draws in, then dims under the rainbow. */
+  .service:hover .trace--main,
+  .service--live:focus-visible .trace--main {
+    opacity: 0.85;
+    animation: main-handoff 2100ms var(--ease-out) forwards;
+  }
+
+  /* Arrival: a small head (white tip + short rainbow trail) rides the tip of the line as it
+     draws, in step with it (same 1 s timing), jittering ~1px; it fades out at the end. */
+  .service__head {
+    opacity: 0;
+  }
+
+  .head {
+    fill: none;
+    stroke: #fff;
+    stroke-width: 1;
+    stroke-linecap: round;
+    stroke-dashoffset: var(--from);
+    opacity: 0.75;
+  }
+
+  .head--tip {
+    stroke-width: 1.4;
+    opacity: 1;
+  }
+
+  .service:hover .service__head,
+  .service--live:focus-visible .service__head {
+    animation:
+      head-leave 1900ms linear forwards,
+      head-jitter 1600ms steps(1, end);
+  }
+
+  .service:hover .head,
+  .service--live:focus-visible .head {
+    animation: dash-run 1600ms cubic-bezier(0.37, 0, 0.63, 1) forwards;
+  }
+
+  /* The same rainbow passes through the word below, in step with the head: a copy of the word,
+     spanning the whole row (as the line does), shows the rainbow only through its letters
+     (background-clip: text), and the band slides so its right edge stays under the tip. */
+  .service__scan {
+    position: absolute;
+    inset: 0;
+    padding-block: inherit;
+    color: transparent;
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      #ff2bd6 18%,
+      #ff5c5c 34%,
+      #ffe94d 50%,
+      #3dff8b 66%,
+      #22e4ff 82%,
+      #fff 96%,
+      transparent
+    );
+    background-repeat: no-repeat;
+    background-size: 6rem 100%;
+    background-position: -6rem 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    filter: drop-shadow(0 0 0.35rem rgb(255 255 255 / 0.3)); /* a soft halo, so it reads */
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .service:hover .service__scan,
+  .service--live:focus-visible .service__scan {
+    animation:
+      scan-run 1600ms cubic-bezier(0.37, 0, 0.63, 1) forwards,
+      scan-leave 1900ms linear forwards;
+  }
+
+  /* Rainbow travels left to right along the line, once the head has gone. */
+  .service:hover .service__rainbow,
+  .service--live:focus-visible .service__rainbow {
+    opacity: 0.6;
+    transition: opacity 450ms var(--ease-out) 1550ms;
+  }
+
+  .service:hover .band,
+  .service--live:focus-visible .band {
+    animation: dash-run 1.4s linear infinite;
+  }
+
+  /* Then a tiny glitch now and then: the line jumps 1px, faint ghosts, an odd slice. */
+  .service:hover .service__lifeline,
+  .service--live:focus-visible .service__lifeline {
+    animation: idle-jitter 2.8s steps(1, end) 2000ms infinite;
+  }
+
+  .service:hover .trace--magenta,
+  .service--live:focus-visible .trace--magenta {
+    animation: idle-ghost-magenta 2.8s steps(1, end) 2000ms infinite;
+  }
+
+  .service:hover .trace--cyan,
+  .service--live:focus-visible .trace--cyan {
+    animation: idle-ghost-cyan 2.8s steps(1, end) 2000ms infinite;
+  }
+
+  .service:hover .service__glitch,
+  .service--live:focus-visible .service__glitch {
+    animation: idle-slices 3.6s steps(1, end) 2300ms infinite;
+  }
+
+  @keyframes main-handoff {
+    0%, 65% { opacity: 0.85; }
+    100% { opacity: 0.2; }
+  }
+
+  @keyframes head-leave {
+    0%, 83% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  @keyframes head-jitter {
+    0% { translate: 0 0; }
+    15% { translate: 0 -0.5px; }
+    30% { translate: 1px 0; }
+    45% { translate: 0 0.5px; }
+    60% { translate: -0.5px 0; }
+    75% { translate: 0 -0.5px; }
+    90% { translate: 0.5px 0; }
+    100% { translate: 0 0; }
+  }
+
+  /* Dash travel for the head (and the travelling rainbow below): per-path --from / --to. */
+  @keyframes dash-run {
+    from { stroke-dashoffset: var(--from); }
+    to { stroke-dashoffset: var(--to); }
+  }
+
+  /* From fully left of the row to its right edge: the band's right edge tracks the tip. */
+  @keyframes scan-run {
+    from { background-position-x: -6rem; }
+    to { background-position-x: 100%; }
+  }
+
+  @keyframes scan-leave {
+    0%, 83% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* Idle glitches: still most of the time, a short twitch at a couple of moments per cycle. */
+  @keyframes idle-jitter {
+    0% { translate: 0 0; }
+    61% { translate: 1px 0; }
+    63% { translate: 0 0; }
+    88% { translate: -1px 0; }
+    90% { translate: 0 0; }
+  }
+
+  @keyframes idle-ghost-magenta {
+    0% { opacity: 0; translate: 0 0; }
+    61% { opacity: 0.3; translate: -1px 0; }
+    63% { opacity: 0; translate: 0 0; }
+    88% { opacity: 0.2; translate: 1px 0; }
+    90% { opacity: 0; translate: 0 0; }
+  }
+
+  @keyframes idle-ghost-cyan {
+    0% { opacity: 0; translate: 0 0; }
+    61% { opacity: 0.3; translate: 1px 0; }
+    63% { opacity: 0; translate: 0 0; }
+    88% { opacity: 0.2; translate: -1px 0; }
+    90% { opacity: 0; translate: 0 0; }
+  }
+
+  @keyframes idle-slices {
+    0% { opacity: 0; }
+    40% { opacity: 0.2; clip-path: inset(20% 60% 40% 20%); translate: 1px 0; }
+    42% { opacity: 0; }
+    78% { opacity: 0.15; clip-path: inset(0 78% 50% 6%); translate: -1px 0; }
+    80% { opacity: 0; }
+  }
+
+  .service--live:focus-visible {
+    outline: 1px solid var(--color-fg);
+    outline-offset: 0.75rem;
+    border-radius: 2px;
+  }
+
+  /* ── Entrance after the loader (BaseLayout sets js-loading; the loader adds is-loaded) ── */
+
+  :global(.js-loading:not(.is-loaded)) .hero__haze,
+  :global(.js-loading:not(.is-loaded)) .hero__dot {
+    opacity: 0;
+  }
+
+  :global(.js-loading:not(.is-loaded)) .hero__photo {
+    opacity: 0;
+    scale: 0.94;
+  }
+
+  :global(.js-loading:not(.is-loaded)) .hero__line {
+    stroke-dashoffset: 1;
+  }
+
+  :global(.js-loading:not(.is-loaded)) .hero__orbit {
+    animation: none;
+  }
+
+  :global(.js-loading:not(.is-loaded)) .hero :global(.site-header),
+  :global(.js-loading:not(.is-loaded)) .hero__services li {
+    opacity: 0;
+    translate: 0 0.75rem;
+  }
+
+  :global(.is-loaded) .hero__line {
+    transition: stroke-dashoffset 1500ms var(--ease-in-out);
+  }
+
+  :global(.is-loaded) .hero__haze {
+    transition:
+      opacity 1500ms var(--ease-in-out),
+      filter 600ms var(--ease-out);
+  }
+
+  :global(.is-loaded) .hero__photo {
+    transition:
+      opacity 1400ms var(--ease-out) 500ms,
+      scale 1800ms var(--ease-out) 500ms;
+  }
+
+  /* The light carries on round the ring once it has closed. */
+  :global(.is-loaded) .hero__dot {
+    transition: opacity 500ms var(--ease-out) 1400ms;
+  }
+
+  :global(.is-loaded) .hero__orbit {
+    animation: hero-orbit 18s linear 1500ms infinite;
+  }
+
+  :global(.is-loaded) .hero :global(.site-header),
+  :global(.is-loaded) .hero__services li {
+    transition:
+      opacity 900ms var(--ease-out) calc(900ms + var(--i, 0) * 120ms),
+      translate 1100ms var(--ease-out) calc(900ms + var(--i, 0) * 120ms);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero__orbit,
+    :global(.is-loaded) .hero__orbit {
+      animation: none;
+    }
+
+    :global(.js-loading:not(.is-loaded)) .hero__line {
+      stroke-dashoffset: 0;
+      opacity: 0;
+    }
+
+    :global(.js-loading:not(.is-loaded)) .hero__photo,
+    :global(.js-loading:not(.is-loaded)) .hero :global(.site-header),
+    :global(.js-loading:not(.is-loaded)) .hero__services li {
+      scale: none;
+      translate: none;
+    }
+
+    :global(.is-loaded) .hero__line,
+    :global(.is-loaded) .hero__haze,
+    :global(.is-loaded) .hero__photo,
+    :global(.is-loaded) .hero__dot,
+    :global(.is-loaded) .hero :global(.site-header),
+    :global(.is-loaded) .hero__services li {
+      transition: opacity 600ms linear;
+    }
+
+    /* No glitch or travelling rainbow: the white lifeline simply appears. */
+    .trace,
+    .service:hover .trace,
+    .service--live:focus-visible .trace {
+      transition: opacity 200ms linear;
+    }
+
+    .service__glitch,
+    .trace--magenta,
+    .trace--cyan,
+    .service__rainbow,
+    .service__head,
+    .service__scan {
+      display: none;
+    }
+
+    .service:hover .trace--main,
+    .service--live:focus-visible .trace--main,
+    .service:hover .service__lifeline,
+    .service--live:focus-visible .service__lifeline {
+      animation: none;
+    }
+
+    .service:hover .service__name,
+    .service--live:focus-visible .service__name {
+      animation: none;
+    }
+  }
+
+  /* Short, wide screens (a phone on its side): a smaller ring so everything fits on one screen. */
+  @media (max-height: 30rem) and (min-aspect-ratio: 4/5) {
+    .hero {
+      --ring: 40svh;
+
+      min-height: max(100svh, 20rem);
+    }
+  }
+
+  /* ── Portrait-shaped screens (phones held upright, upright tablets): services stack as rows ── */
+
+  @media (max-aspect-ratio: 4/5) {
+    .hero {
+      --ring: min(76vw, 46svh, 30rem);
+
+      display: block;
+      min-height: max(100svh, 32rem);
+      padding: 0;
+    }
+
+    /* Ring centred, like the loader; on short screens lifted to clear the services (~13rem). */
+    .hero__stage {
+      position: absolute;
+      top: min(50%, calc(100% - 13rem - var(--ring) / 2));
+      left: 50%;
+      translate: -50% -50%;
+    }
+
+    .hero__services {
+      position: absolute;
+      inset: auto var(--gutter) var(--gutter);
+      max-width: none;
+      margin-left: 0;
+    }
+
+    .hero__services ul {
+      row-gap: 1.25rem;
+    }
+
+    .service {
+      padding-block: 0.75rem;
+    }
+
+    .service__name {
+      font-size: clamp(0.95rem, 4vw, 1.25rem);
+    }
   }
 </style>
