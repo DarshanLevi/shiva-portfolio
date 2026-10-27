@@ -3,8 +3,13 @@
  * A brand's page: TEMPLATE with placeholder content until the real case studies arrive in
  * contents/. It opens full-screen in the brand's light, the same light the visitor just walked
  * into through its door on /branding, so the zoom hands over seamlessly; the case study follows.
+ *
+ * The opening screen is now the project gallery (src/components/Gallery.astro): a dark room with
+ * the projects as artworks, swipe / arrows to move between them, and the whole room's colours
+ * follow the active project. The brand's light still hands over from the door: it fades away to
+ * reveal the room. The case study below follows the active project's colour and "next" link.
  */
-import BrandMark from '../../components/BrandMark.astro';
+import Gallery from '../../components/Gallery.astro';
 import SiteHeader from '../../components/SiteHeader.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { brands, type Brand } from '../../data/brands';
@@ -12,16 +17,17 @@ import { brands, type Brand } from '../../data/brands';
 export function getStaticPaths() {
   return brands.map((brand, i) => ({
     params: { slug: brand.slug },
-    props: { brand, next: brands[(i + 1) % brands.length] },
+    props: { brand, next: brands[(i + 1) % brands.length], index: i },
   }));
 }
 
 interface Props {
   brand: Brand;
   next: Brand;
+  index: number;
 }
 
-const { brand, next } = Astro.props;
+const { brand, next, index } = Astro.props;
 // TODO(content): real facts, story and images from contents/.
 const facts = ['Client', 'Year', 'Scope'];
 const frames = ['01', '02', '03'];
@@ -30,15 +36,8 @@ const frames = ['01', '02', '03'];
 <BaseLayout title={`${brand.name} — Branding — Shiva`} description={`${brand.name}: branding case study.`}>
   <SiteHeader back={{ href: '/branding', label: 'Branding' }} />
   <main class="brand" style={`--brand: ${brand.color}`}>
-    <section class="brand__hero" aria-labelledby="brand-title">
-      <span class="brand__mark rise" style="--i: 0"><BrandMark shape={brand.mark} /></span>
-      <h1 class="brand__name rise" id="brand-title" style="--i: 1">{brand.name}</h1>
-      <p class="brand__tagline rise" style="--i: 2">
-        <span class="brand__tag">[ Template ]</span>{' '}
-        {brand.tagline}
-      </p>
-      <span class="brand__scroll" aria-hidden="true">Scroll</span>
-    </section>
+    <h1 class="sr-only" data-brand-title>{brand.name}</h1>
+    <Gallery brands={brands} start={index} />
 
     <section class="brand__body" aria-label="Case study">
       <dl class="brand__facts">
@@ -63,108 +62,20 @@ const frames = ['01', '02', '03'];
           ))
         }
       </ul>
-      <a class="brand__next" href={`/branding/${next.slug}`}>
+      <a class="brand__next" href={`/branding/${next.slug}`} data-brand-next>
         <span class="brand__next-label">Next brand</span>
-        <span class="brand__next-name">{next.name}</span>
+        <span class="brand__next-name" data-brand-next-name>{next.name}</span>
       </a>
     </section>
   </main>
 </BaseLayout>
 
 <style>
-  /* ── Opening screen: the brand's light (same gradient as the room behind its door, seen up close) ── */
-
-  .brand__hero {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: clamp(1rem, 3vh, 1.75rem);
-    min-height: 100vh;
-    min-height: 100svh;
-    padding: var(--gutter);
-    overflow: hidden;
-    isolation: isolate;
-    color: #fff;
-    text-align: center;
-    background: radial-gradient(
-      ellipse 140% 220% at 50% 32%,
-      var(--brand),
-      color-mix(in oklab, var(--brand) 45%, #000) 55%,
-      color-mix(in oklab, var(--brand) 12%, #000)
-    );
-  }
-
-  /* Grain, and a fade into the page below. */
-  .brand__hero::before,
-  .brand__hero::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-  }
-
-  .brand__hero::before {
-    background-image: var(--grain);
-    opacity: 0.06;
-  }
-
-  .brand__hero::after {
-    background: linear-gradient(to bottom, transparent 62%, var(--color-bg));
-  }
-
-  .brand__mark {
-    display: block;
-    width: clamp(4.5rem, 12vmin, 8rem);
-    filter: drop-shadow(0 0 1.25rem rgb(255 255 255 / 0.55));
-  }
-
-  .brand__mark :global(svg) {
-    display: block;
-    width: 100%;
-    height: auto;
-  }
-
-  .brand__name {
-    margin: 0;
-    padding-left: 0.2em; /* balances the trailing letter-spacing */
-    font-size: clamp(1.75rem, 5vw, 4.5rem);
-    font-weight: 600;
-    line-height: 1;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    text-shadow: 0 2px 24px rgb(0 0 0 / 0.25);
-  }
-
-  .brand__tagline,
-  .brand__scroll {
-    margin: 0;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: rgb(255 255 255 / 0.8);
-  }
-
-  .brand__tag {
-    color: #fff;
-  }
-
-  .brand__scroll {
-    position: absolute;
-    bottom: var(--gutter);
-    left: 50%;
-    translate: -50% 0;
-    font-size: 0.7rem;
-    color: rgb(255 255 255 / 0.6);
-  }
-
   /* ── Case study (placeholder) ── */
 
   .brand__body {
     display: grid;
+    grid-template-columns: minmax(0, 1fr); /* stops the content from widening the page on phones */
     gap: clamp(2.5rem, 6vw, 5rem);
     max-width: 72rem;
     margin: 0 auto;
@@ -275,29 +186,27 @@ const frames = ['01', '02', '03'];
       grid-column: auto;
     }
   }
-
-  /* Entrance: after the page change settles, the mark and name rise in the light. */
-  .rise {
-    animation: rise 1000ms var(--ease-out) backwards;
-    animation-delay: calc(350ms + var(--i, 0) * 120ms);
-  }
-
-  @keyframes rise {
-    from {
-      opacity: 0;
-      translate: 0 0.75rem;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .rise {
-      animation-name: fade;
-    }
-
-    @keyframes fade {
-      from {
-        opacity: 0;
-      }
-    }
-  }
 </style>
+
+<script>
+  // The gallery moves between projects without leaving the page: keep the address, the page title,
+  // the case study's colour and its "next brand" link in step with the active project.
+  const gallery = document.querySelector<HTMLElement>('[data-gallery]');
+  gallery?.addEventListener('gallery:change', (event) => {
+    const { project, next, url } = (event as CustomEvent).detail as {
+      project: { name: string; color: string };
+      next: { slug: string; name: string };
+      url: string;
+    };
+    history.replaceState(null, '', url);
+    document.title = `${project.name} — Branding — Shiva`;
+    const main = document.querySelector<HTMLElement>('.brand');
+    main?.style.setProperty('--brand', project.color);
+    const heading = document.querySelector('[data-brand-title]');
+    if (heading) heading.textContent = project.name;
+    const link = document.querySelector<HTMLAnchorElement>('[data-brand-next]');
+    if (link) link.href = `/branding/${next.slug}`;
+    const nextName = document.querySelector('[data-brand-next-name]');
+    if (nextName) nextName.textContent = next.name;
+  });
+</script>

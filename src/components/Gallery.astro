@@ -1,0 +1,876 @@
+---
+/**
+ * The project gallery, seen after walking through a door (after
+ * reference/after entering door/Midnight Mountain Gallery Showcase.png): a dark room (back wall,
+ * side walls, ceiling, glossy floor) with the active project's artwork on the back wall, two more
+ * artworks on each side wall, "Previous / Next Project" controls and the project title. Swipe (or
+ * drag, arrow keys, the chevrons, or click a side artwork) to move between projects.
+ *
+ * THEME TRANSITION: the whole room takes its colours from one animated colour, `--theme`, the
+ * active project's colour. Walls, ceiling, floor, the light the artworks throw on them, the haze
+ * and the shadows are all derived from it with color-mix(), so changing project fades the whole
+ * atmosphere from one palette to the next (a registered <color> custom property, so the browser
+ * interpolates it). No light strips, no extra effects.
+ *
+ * The room is a small 3D scene sized in `--u` (1u = 1px of the 1669×940 reference at full height),
+ * with the camera low (eye at 135u above the floor) and the back wall 1000u away, which is the
+ * perspective distance, so the back wall is drawn at true size. Artworks live in 7 slots
+ * (-3 … 3; ±3 are off-screen parking) and glide between them.
+ */
+import { getImage } from 'astro:assets';
+import type { Brand } from '../data/brands';
+
+interface Props {
+  brands: Brand[];
+  /** Index of the project shown first. */
+  start: number;
+  /** URL prefix of the brand pages (the address follows the active project). */
+  base?: string;
+}
+
+const { brands, start, base = '/branding/' } = Astro.props;
+
+const SLOTS = 7;
+const HALF = 3;
+const N = brands.length;
+// Each project's artwork, resized for the gallery (the artworks are shown at most ~300px wide).
+const covers = await Promise.all(brands.map((b) => getImage({ src: b.cover, width: 640, quality: 78 })));
+const mod = (x: number, m: number) => ((x % m) + m) % m;
+
+// Element j holds the virtual index v (start - 3 … start + 3, v ≡ j mod 7); its slot is v - start.
+const arts = Array.from({ length: SLOTS }, (_, j) => {
+  const v = start - HALF + mod(j - (start - HALF), SLOTS);
+  const project = brands[mod(v, N)];
+  return { j, slot: v - start, color: project.color, name: project.name, img: covers[mod(v, N)].src };
+});
+const projects = brands.map(({ slug, name, color }, i) => ({ slug, name, color, img: covers[i].src }));
+const current = brands[mod(start, N)];
+---
+
+<section
+  class="gallery"
+  data-gallery
+  data-start={start}
+  data-base={base}
+  data-projects={JSON.stringify(projects)}
+  style={`--theme: ${current.color}`}
+  aria-roledescription="carousel"
+  aria-label="Projects"
+>
+  <div class="stage" data-stage>
+    <div class="world">
+      <div class="plane plane--back"><div class="plane__wash"></div></div>
+      <div class="plane plane--left"></div>
+      <div class="plane plane--right"></div>
+      <div class="plane plane--ceiling"><div class="plane__wash"></div></div>
+      <div class="plane plane--floor">
+        <div class="plane__pool"></div>
+        {arts.map((a) => <span class="refl" data-slot={a.slot} data-j={a.j} style={`--c: ${a.color}`}></span>)}
+      </div>
+      {
+        arts.map((a) => (
+          <div
+            class="art"
+            role="group"
+            aria-roledescription="slide"
+            aria-label={a.name}
+            data-slot={a.slot}
+            data-j={a.j}
+            style={`--c: ${a.color}; --img: url(${a.img})`}
+          >
+            <span class="art__glow"></span>
+            <span class="art__canvas"></span>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="haze"></div>
+    <div class="vignette"></div>
+
+    <div class="hud">
+      <button class="nav nav--prev" type="button" data-prev aria-label="Previous project">
+        <span class="nav__label">Previous<br />Project</span>
+        <svg class="nav__chevron" viewBox="0 0 20 36" aria-hidden="true" focusable="false">
+          <path d="M17 2 3 18l14 16" />
+        </svg>
+      </button>
+      <button class="nav nav--next" type="button" data-next aria-label="Next project">
+        <span class="nav__label">Next<br />Project</span>
+        <svg class="nav__chevron" viewBox="0 0 20 36" aria-hidden="true" focusable="false">
+          <path d="m3 2 14 16L3 34" />
+        </svg>
+      </button>
+      <div class="title">
+        <p class="title__name" data-title>{current.name}</p>
+        <span class="title__rule"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hand-over from the door's zoom: the black fades away to reveal the room. -->
+  <div class="veil" aria-hidden="true"></div>
+  <p class="sr-only" aria-live="polite" data-live></p>
+</section>
+
+<style is:global>
+  /* One animated colour drives the whole room. */
+  @property --theme {
+    syntax: '<color>';
+    inherits: true;
+    initial-value: #1a1a1a;
+  }
+</style>
+
+<style>
+  .gallery {
+    /* 1u = 1px of the 1669×940 reference, scaled to the screen height (to the width on portrait). */
+    --u: calc(100svh / 940);
+    --theme-ms: 1900ms;
+    --glide-ms: 1250ms;
+    --ease: cubic-bezier(0.45, 0.05, 0.2, 1);
+
+    /* Everything below is derived from --theme (the active project's colour). */
+    --wall: color-mix(in oklab, var(--theme) 7%, #0b0b0b);
+    --wall-dark: color-mix(in oklab, var(--theme) 5%, #040404);
+    --ceiling: color-mix(in oklab, var(--theme) 4%, #050505);
+    --floor: color-mix(in oklab, var(--theme) 7%, #040404);
+    --light: color-mix(in oklab, var(--theme) 62%, #fff);
+    --shadow: color-mix(in oklab, var(--theme) 14%, #000);
+
+    position: relative;
+    height: 100vh;
+    height: 100svh;
+    min-height: 26rem;
+    overflow: hidden;
+    isolation: isolate;
+    color: #fff;
+    background: color-mix(in oklab, var(--theme) 4%, #030303);
+    transition: --theme var(--theme-ms) var(--ease);
+  }
+
+  @media (max-aspect-ratio: 1/1) {
+    .gallery {
+      --u: calc(100vw / 640);
+    }
+  }
+
+  .stage {
+    position: absolute;
+    inset: 0;
+    perspective: calc(var(--u) * 1000);
+    perspective-origin: 50% 58.5%;
+    touch-action: pan-y;
+    cursor: grab;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .stage:active {
+    cursor: grabbing;
+  }
+
+  /* The vanishing point (eye level) sits at 58.5% of the height, like the reference. */
+  .world {
+    position: absolute;
+    top: 58.5%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    transform-style: preserve-3d;
+  }
+
+  /* ── The room: back wall 696u wide × 535u high, eye 135u above the floor, walls 900u deep ── */
+
+  .plane {
+    position: absolute;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .plane--back {
+    top: calc(var(--u) * -400);
+    left: calc(var(--u) * -348);
+    width: calc(var(--u) * 696);
+    height: calc(var(--u) * 535);
+    background-color: var(--wall);
+    /* Panel seams, as in the reference, and a faint horizontal line at eye level. */
+    background-image:
+      linear-gradient(
+        90deg,
+        transparent calc(33.333% - 0.5px),
+        rgb(255 255 255 / 0.04) 0 calc(33.333% + 0.5px),
+        transparent 0 calc(66.666% - 0.5px),
+        rgb(255 255 255 / 0.04) 0 calc(66.666% + 0.5px),
+        transparent 0
+      ),
+      linear-gradient(to bottom, transparent calc(74.8% - 0.5px), rgb(255 255 255 / 0.035) 0 calc(74.8% + 0.5px), transparent 0);
+  }
+
+  /* The light of the active artwork on the wall around it, in the theme colour. */
+  .plane__wash {
+    position: absolute;
+    inset: 0;
+  }
+
+  .plane--back .plane__wash {
+    background: radial-gradient(
+      ellipse 40% 52% at 50% 53%,
+      color-mix(in oklab, var(--theme) 26%, transparent),
+      color-mix(in oklab, var(--theme) 9%, transparent) 55%,
+      transparent 82%
+    );
+  }
+
+  .plane--left,
+  .plane--right {
+    top: calc(var(--u) * -400);
+    width: calc(var(--u) * 900);
+    height: calc(var(--u) * 535);
+    background-color: var(--wall);
+    background-image: linear-gradient(to bottom, transparent calc(74.8% - 0.5px), rgb(255 255 255 / 0.03) 0 calc(74.8% + 0.5px), transparent 0);
+  }
+
+  /* Darker towards the camera, and a little of the theme where it meets the floor. */
+  .plane--left {
+    left: calc(var(--u) * -900);
+    transform-origin: 100% 0;
+    transform: translate3d(calc(var(--u) * -348), 0, 0) rotateY(90deg);
+    box-shadow: inset 0 calc(var(--u) * -90) calc(var(--u) * 80) calc(var(--u) * -50) color-mix(in oklab, var(--theme) 16%, transparent);
+  }
+
+  .plane--left::after,
+  .plane--right::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .plane--left::after {
+    background: linear-gradient(to left, rgb(0 0 0 / 0.7), rgb(0 0 0 / 0.15) 55%, transparent);
+  }
+
+  .plane--right {
+    left: 0;
+    transform-origin: 0 0;
+    transform: translate3d(calc(var(--u) * 348), 0, 0) rotateY(-90deg);
+    box-shadow: inset 0 calc(var(--u) * -90) calc(var(--u) * 80) calc(var(--u) * -50) color-mix(in oklab, var(--theme) 16%, transparent);
+  }
+
+  .plane--right::after {
+    background: linear-gradient(to right, rgb(0 0 0 / 0.7), rgb(0 0 0 / 0.15) 55%, transparent);
+  }
+
+  .plane--ceiling {
+    top: calc(var(--u) * -900);
+    left: calc(var(--u) * -348);
+    width: calc(var(--u) * 696);
+    height: calc(var(--u) * 900);
+    background-color: var(--ceiling);
+    transform-origin: 50% 100%;
+    transform: translate3d(0, calc(var(--u) * -400), 0) rotateX(-90deg);
+  }
+
+  /* Faint spill of the artwork's light on the ceiling near the back wall, then darkness. */
+  .plane--ceiling .plane__wash {
+    background:
+      radial-gradient(ellipse 38% 24% at 50% 100%, color-mix(in oklab, var(--theme) 16%, transparent), transparent 80%),
+      linear-gradient(to top, rgb(0 0 0 / 0.7), transparent 55%);
+  }
+
+  .plane--floor {
+    top: 0;
+    left: calc(var(--u) * -348);
+    width: calc(var(--u) * 696);
+    height: calc(var(--u) * 900);
+    background-color: var(--floor);
+    /* The walls' colour reflected at the sides, a sheen near the back wall, darkening to the camera. */
+    background-image:
+      linear-gradient(
+        90deg,
+        color-mix(in oklab, var(--wall) 85%, transparent),
+        transparent 16%,
+        transparent 84%,
+        color-mix(in oklab, var(--wall) 85%, transparent)
+      ),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.05), transparent 30%, rgb(0 0 0 / 0.45) 100%);
+    transform-origin: 50% 0;
+    transform: translate3d(0, calc(var(--u) * 135), 0) rotateX(90deg);
+  }
+
+  /* The pool of the active artwork's light on the floor in front of the back wall. */
+  .plane__pool {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse 24% 30% at 50% 0%,
+      color-mix(in oklab, var(--theme) 38%, transparent),
+      color-mix(in oklab, var(--theme) 12%, transparent) 55%,
+      transparent
+    );
+  }
+
+  /* ── Artworks: 7 slots; the five middle ones are on show ── */
+
+  .art,
+  .refl {
+    /* Slot 0 (back wall) is the default; the others override these. Artwork: centre (cx, cy, cz) in
+       the room, turned by ry, size w × h. Reflection: a rectangle on the floor plane (rx from its left
+       edge, ry from the back wall, rw × rh), fading away from the wall along `dir`. */
+    --cx: 0px;
+    --cy: calc(var(--u) * -96.5);
+    --cz: calc(var(--u) * 2);
+    --ry: 0deg;
+    --w: calc(var(--u) * 236);
+    --h: calc(var(--u) * 289);
+    --rx: calc(var(--u) * 230);
+    --rY: 0px;
+    --rw: calc(var(--u) * 236);
+    --rh: calc(var(--u) * 430);
+    --dir: 180deg;
+    --feather: 90deg;
+  }
+
+  .art[data-slot='-1'],
+  .refl[data-slot='-1'] {
+    --cx: calc(var(--u) * -346);
+    --cy: calc(var(--u) * -85);
+    --cz: calc(var(--u) * 286);
+    --ry: 90deg;
+    --w: calc(var(--u) * 114);
+    --h: calc(var(--u) * 300);
+    --rx: 0px;
+    --rY: calc(var(--u) * 229);
+    --rw: calc(var(--u) * 150);
+    --rh: calc(var(--u) * 114);
+    --dir: 90deg;
+    --feather: 0deg;
+  }
+
+  .art[data-slot='-2'],
+  .refl[data-slot='-2'] {
+    --cx: calc(var(--u) * -346);
+    --cy: calc(var(--u) * -85);
+    --cz: calc(var(--u) * 490);
+    --ry: 90deg;
+    --w: calc(var(--u) * 116);
+    --h: calc(var(--u) * 300);
+    --rx: 0px;
+    --rY: calc(var(--u) * 432);
+    --rw: calc(var(--u) * 150);
+    --rh: calc(var(--u) * 116);
+    --dir: 90deg;
+    --feather: 0deg;
+  }
+
+  .art[data-slot='-3'],
+  .refl[data-slot='-3'] {
+    --cx: calc(var(--u) * -346);
+    --cy: calc(var(--u) * -85);
+    --cz: calc(var(--u) * 800);
+    --ry: 90deg;
+    --w: calc(var(--u) * 116);
+    --h: calc(var(--u) * 300);
+    --rx: 0px;
+    --rY: calc(var(--u) * 742);
+    --rw: calc(var(--u) * 150);
+    --rh: calc(var(--u) * 116);
+    --dir: 90deg;
+    --feather: 0deg;
+  }
+
+  .art[data-slot='1'],
+  .refl[data-slot='1'] {
+    --cx: calc(var(--u) * 346);
+    --cy: calc(var(--u) * -85);
+    --cz: calc(var(--u) * 286);
+    --ry: -90deg;
+    --w: calc(var(--u) * 114);
+    --h: calc(var(--u) * 300);
+    --rx: calc(var(--u) * 546);
+    --rY: calc(var(--u) * 229);
+    --rw: calc(var(--u) * 150);
+    --rh: calc(var(--u) * 114);
+    --dir: 270deg;
+    --feather: 0deg;
+  }
+
+  .art[data-slot='2'],
+  .refl[data-slot='2'] {
+    --cx: calc(var(--u) * 346);
+    --cy: calc(var(--u) * -85);
+    --cz: calc(var(--u) * 490);
+    --ry: -90deg;
+    --w: calc(var(--u) * 116);
+    --h: calc(var(--u) * 300);
+    --rx: calc(var(--u) * 546);
+    --rY: calc(var(--u) * 432);
+    --rw: calc(var(--u) * 150);
+    --rh: calc(var(--u) * 116);
+    --dir: 270deg;
+    --feather: 0deg;
+  }
+
+  .art[data-slot='3'],
+  .refl[data-slot='3'] {
+    --cx: calc(var(--u) * 346);
+    --cy: calc(var(--u) * -85);
+    --cz: calc(var(--u) * 800);
+    --ry: -90deg;
+    --w: calc(var(--u) * 116);
+    --h: calc(var(--u) * 300);
+    --rx: calc(var(--u) * 546);
+    --rY: calc(var(--u) * 742);
+    --rw: calc(var(--u) * 150);
+    --rh: calc(var(--u) * 116);
+    --dir: 270deg;
+    --feather: 0deg;
+  }
+
+  .art {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--w);
+    height: var(--h);
+    transform: translate3d(calc(var(--cx) - var(--w) / 2), calc(var(--cy) - var(--h) / 2), var(--cz)) rotateY(var(--ry));
+    transition:
+      transform var(--glide-ms) var(--ease),
+      width var(--glide-ms) var(--ease),
+      height var(--glide-ms) var(--ease),
+      opacity 700ms var(--ease);
+    cursor: pointer;
+  }
+
+  .art[data-slot='0'] {
+    cursor: default;
+  }
+
+  .art[data-slot='-3'],
+  .art[data-slot='3'],
+  .refl[data-slot='-3'],
+  .refl[data-slot='3'] {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Moved instantly (a slot being re-used), or faded out first. */
+  .art.is-jump,
+  .refl.is-jump {
+    transition: none;
+  }
+
+  .art.is-away,
+  .refl.is-away {
+    opacity: 0;
+    transition: opacity 220ms linear;
+  }
+
+  /* The light the artwork throws on its wall. */
+  .art__glow {
+    position: absolute;
+    inset: calc(var(--u) * -50);
+    background: radial-gradient(
+      ellipse 50% 50%,
+      color-mix(in oklab, var(--c) 40%, transparent),
+      color-mix(in oklab, var(--c) 12%, transparent) 55%,
+      transparent 78%
+    );
+    pointer-events: none;
+  }
+
+  /* The project's artwork (a placeholder photo for now), with a graded wash in the project's colour
+     so it sits in the room; the gradient underneath shows while the image loads. */
+  .art__canvas {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border: calc(var(--u) * 3) solid #070707;
+    outline: calc(var(--u) * 1) solid rgb(255 255 255 / 0.08);
+    box-shadow:
+      0 0 0 calc(var(--u) * 2) #000,
+      0 calc(var(--u) * 8) calc(var(--u) * 36) rgb(0 0 0 / 0.7);
+    background:
+      linear-gradient(to bottom, transparent 55%, rgb(0 0 0 / 0.35)),
+      var(--img) center / cover no-repeat,
+      radial-gradient(
+        ellipse 62% 30% at 50% 58%,
+        color-mix(in oklab, var(--c) 40%, #fff),
+        color-mix(in oklab, var(--c) 72%, transparent) 38%,
+        transparent 78%
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--c) 22%, #06070b) 0%,
+        color-mix(in oklab, var(--c) 70%, #1a1020) 42%,
+        color-mix(in oklab, var(--c) 82%, #fff 18%) 58%,
+        color-mix(in oklab, var(--c) 34%, #05060a) 60%,
+        color-mix(in oklab, var(--c) 52%, #05060a) 78%,
+        color-mix(in oklab, var(--c) 16%, #030304) 100%
+      );
+  }
+
+  /* ── Reflections on the glossy floor: a smeared streak of each artwork's colour, running away
+     from the foot of its wall ── */
+
+  .refl {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--rw);
+    height: var(--rh);
+    transform: translate(var(--rx), var(--rY));
+    background: linear-gradient(
+      var(--dir),
+      color-mix(in oklab, var(--c) 52%, transparent),
+      color-mix(in oklab, var(--c) 22%, transparent) 40%,
+      transparent
+    );
+    -webkit-mask-image: linear-gradient(var(--feather), transparent, #000 22%, #000 78%, transparent);
+    mask-image: linear-gradient(var(--feather), transparent, #000 22%, #000 78%, transparent);
+    filter: blur(calc(var(--u) * 7));
+    transition:
+      transform var(--glide-ms) var(--ease),
+      width var(--glide-ms) var(--ease),
+      height var(--glide-ms) var(--ease),
+      opacity 700ms var(--ease);
+    pointer-events: none;
+  }
+
+  /* ── Atmosphere: a haze of the theme around the centre, and shadow at the edges ── */
+
+  .haze,
+  .vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .haze {
+    background: radial-gradient(ellipse 46% 42% at 50% 56%, color-mix(in oklab, var(--theme) 11%, transparent), transparent 72%);
+    mix-blend-mode: screen;
+  }
+
+  .vignette {
+    background: radial-gradient(ellipse 80% 78% at 50% 54%, transparent 46%, color-mix(in oklab, var(--theme) 10%, #000) 108%);
+  }
+
+  /* ── Controls and title, flat on the screen ── */
+
+  .hud {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .nav {
+    position: absolute;
+    top: calc(58.5% + var(--u) * -150);
+    display: grid;
+    gap: calc(var(--u) * 24);
+    padding: calc(var(--u) * 10);
+    border: 0;
+    background: none;
+    color: rgb(255 255 255 / 0.92);
+    font: inherit;
+    font-weight: 300;
+    font-size: max(0.75rem, calc(var(--u) * 18));
+    line-height: 1.15;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: color 300ms var(--ease);
+  }
+
+  .nav:hover,
+  .nav:focus-visible {
+    color: #fff;
+  }
+
+  .nav:focus-visible {
+    outline: 1px solid rgb(255 255 255 / 0.6);
+    outline-offset: 4px;
+  }
+
+  .nav--prev {
+    left: calc(50% - var(--u) * 276);
+    text-align: left;
+  }
+
+  .nav--next {
+    left: calc(50% + var(--u) * 196);
+    text-align: center;
+  }
+
+  .nav__chevron {
+    width: calc(var(--u) * 20);
+    height: calc(var(--u) * 36);
+    min-width: 11px;
+    min-height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+    stroke-linecap: square;
+    transition: translate 400ms var(--ease);
+  }
+
+  .nav--prev .nav__chevron {
+    margin-left: calc(var(--u) * 62);
+  }
+
+  .nav--next .nav__chevron {
+    margin-left: calc(var(--u) * -4);
+  }
+
+  .nav--prev:hover .nav__chevron {
+    translate: -0.25rem 0;
+  }
+
+  .nav--next:hover .nav__chevron {
+    translate: 0.25rem 0;
+  }
+
+  .title {
+    position: absolute;
+    top: calc(58.5% + var(--u) * 68);
+    left: 50%;
+    display: grid;
+    justify-items: center;
+    gap: calc(var(--u) * 20);
+    translate: -50% 0;
+  }
+
+  .title__name {
+    margin: 0;
+    padding-left: 0.28em; /* balances the trailing letter-spacing */
+    font-size: max(0.7rem, calc(var(--u) * 16));
+    font-weight: 300;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: opacity 260ms linear;
+  }
+
+  .title__name.is-changing {
+    opacity: 0;
+  }
+
+  .title__rule {
+    width: calc(var(--u) * 34);
+    min-width: 22px;
+    height: 1px;
+    background: rgb(255 255 255 / 0.85);
+  }
+
+  /* ── Arriving from the door: it ends in black, and the room fades out of the black, coming into
+     focus (the veil lifts while the stage sharpens from a soft blur) ── */
+
+  .veil {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: #000;
+    pointer-events: none;
+    animation: veil-away 2000ms cubic-bezier(0.4, 0, 0.3, 1) 200ms forwards;
+  }
+
+  @keyframes veil-away {
+    to {
+      opacity: 0;
+    }
+  }
+
+  .stage {
+    animation: stage-focus 2400ms cubic-bezier(0.3, 0.1, 0.2, 1) both;
+  }
+
+  @keyframes stage-focus {
+    from {
+      filter: blur(14px);
+      scale: 1.05;
+    }
+    to {
+      filter: blur(0);
+      scale: 1;
+    }
+  }
+
+  /* Portrait screens: the labels give way to the chevrons. */
+  @media (max-width: 40rem) {
+    .nav__label {
+      display: none;
+    }
+
+    .nav {
+      top: calc(58.5% + var(--u) * -80);
+    }
+
+    .nav--prev {
+      left: calc(50% - var(--u) * 262);
+    }
+
+    .nav--prev .nav__chevron,
+    .nav--next .nav__chevron {
+      margin-left: 0;
+    }
+
+    .nav--next {
+      left: calc(50% + var(--u) * 236);
+    }
+  }
+
+  /* No gliding: the room simply fades to the next project; the colours still change, gently. */
+  @media (prefers-reduced-motion: reduce) {
+    .gallery {
+      --theme-ms: 500ms;
+      --glide-ms: 1ms;
+    }
+
+    .veil {
+      animation-duration: 400ms;
+      animation-delay: 0ms;
+    }
+
+    .stage {
+      animation: none;
+    }
+
+    .nav__chevron {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  // Moving between projects: 7 artwork slots (-3 … 3). When the active project changes, every
+  // element glides to its new slot; an element that would have to cross the room (leaving one end
+  // for the other) is moved instantly while it is off-screen (or faded out first, if it was shown).
+  // The theme colour is set to the new project's colour and the CSS fades the whole room with it.
+  const SLOTS = 7;
+  const HALF = 3;
+  const GLIDE_MS = 1250;
+  const SWIPE_PX = 44;
+
+  const root = document.querySelector<HTMLElement>('[data-gallery]');
+  if (root) {
+    type Project = { slug: string; name: string; color: string; img: string };
+    const projects: Project[] = JSON.parse(root.dataset.projects ?? '[]');
+    const base = root.dataset.base ?? '/branding/';
+    const N = projects.length;
+    const mod = (x: number, m: number) => ((x % m) + m) % m;
+
+    const arts = Array.from(root.querySelectorAll<HTMLElement>('.art'));
+    const refls = Array.from(root.querySelectorAll<HTMLElement>('.refl'));
+    const title = root.querySelector<HTMLElement>('[data-title]');
+    const live = root.querySelector<HTMLElement>('[data-live]');
+    const stage = root.querySelector<HTMLElement>('[data-stage]');
+
+    let active = Number(root.dataset.start ?? 0); // virtual index; the project is mod N
+    let busy = false;
+
+    const projectAt = (v: number) => projects[mod(v, N)];
+
+    const setSlot = (el: HTMLElement, slot: number, project: Project) => {
+      el.dataset.slot = String(slot);
+      el.style.setProperty('--c', project.color);
+      if (el.classList.contains('art')) el.style.setProperty('--img', `url(${project.img})`);
+      if (el.classList.contains('art')) el.setAttribute('aria-label', project.name);
+    };
+
+    // Jump an element to a slot without gliding; if it was on show, fade it out first, then in.
+    const relocate = (pair: HTMLElement[], slot: number, project: Project, wasShown: boolean) => {
+      const finish = () => {
+        for (const el of pair) el.classList.add('is-jump');
+        for (const el of pair) setSlot(el, slot, project);
+        void root.offsetWidth; // apply the jump before transitions come back
+        for (const el of pair) el.classList.remove('is-jump', 'is-away');
+      };
+      if (wasShown) {
+        for (const el of pair) el.classList.add('is-away');
+        setTimeout(finish, 230);
+      } else {
+        finish();
+      }
+    };
+
+    const layout = () => {
+      for (let j = 0; j < SLOTS; j++) {
+        const v = active - HALF + mod(j - (active - HALF), SLOTS);
+        const slot = v - active;
+        const before = Number(arts[j].dataset.slot);
+        const pair = [arts[j], refls[j]];
+        if (Math.abs(slot - before) > 2) {
+          relocate(pair, slot, projectAt(v), Math.abs(before) <= 2);
+        } else {
+          for (const el of pair) el.dataset.slot = String(slot);
+        }
+      }
+    };
+
+    const announce = () => {
+      const project = projectAt(active);
+      const next = projectAt(active + 1);
+      root.style.setProperty('--theme', project.color);
+      if (title) {
+        title.classList.add('is-changing');
+        setTimeout(() => {
+          title.textContent = project.name;
+          title.classList.remove('is-changing');
+        }, 260);
+      }
+      if (live) live.textContent = `${project.name}, project ${mod(active, N) + 1} of ${N}`;
+      root.dispatchEvent(
+        new CustomEvent('gallery:change', {
+          bubbles: true,
+          detail: { index: mod(active, N), project, next, url: base + project.slug },
+        }),
+      );
+    };
+
+    const step = (by: number) => {
+      if (busy || by === 0 || N < 2) return;
+      busy = true;
+      active += by;
+      layout();
+      announce();
+      setTimeout(() => (busy = false), GLIDE_MS * 0.7);
+    };
+
+    root.querySelector('[data-prev]')?.addEventListener('click', () => step(-1));
+    root.querySelector('[data-next]')?.addEventListener('click', () => step(1));
+
+    addEventListener('keydown', (event) => {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target && /^(input|textarea|select)$/i.test(target.tagName)) return;
+      if (event.key === 'ArrowLeft') step(-1);
+      else if (event.key === 'ArrowRight') step(1);
+    });
+
+    // Swipe or drag; a plain click on a side artwork moves to it.
+    let startX = 0;
+    let startY = 0;
+    let tracking = false;
+    stage?.addEventListener('pointerdown', (event) => {
+      if ((event.target as HTMLElement).closest('.nav')) return;
+      tracking = true;
+      startX = event.clientX;
+      startY = event.clientY;
+    });
+    stage?.addEventListener('pointerup', (event) => {
+      if (!tracking) return;
+      tracking = false;
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      if (Math.abs(dx) >= SWIPE_PX && Math.abs(dx) > Math.abs(dy)) {
+        step(dx < 0 ? 1 : -1);
+        return;
+      }
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) {
+        const art = (event.target as HTMLElement).closest<HTMLElement>('.art');
+        const slot = art ? Number(art.dataset.slot) : 0;
+        if (art && Math.abs(slot) >= 1 && Math.abs(slot) <= 2) step(slot);
+      }
+    });
+    stage?.addEventListener('pointercancel', () => (tracking = false));
+  }
+</script>
