@@ -1,0 +1,303 @@
+---
+/**
+ * A brand's page: TEMPLATE with placeholder content until the real case studies arrive in
+ * contents/. It opens full-screen in the brand's light, the same light the visitor just walked
+ * into through its door on /branding, so the zoom hands over seamlessly; the case study follows.
+ */
+import BrandMark from '../../components/BrandMark.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { brands, type Brand } from '../../data/brands';
+
+export function getStaticPaths() {
+  return brands.map((brand, i) => ({
+    params: { slug: brand.slug },
+    props: { brand, next: brands[(i + 1) % brands.length] },
+  }));
+}
+
+interface Props {
+  brand: Brand;
+  next: Brand;
+}
+
+const { brand, next } = Astro.props;
+// TODO(content): real facts, story and images from contents/.
+const facts = ['Client', 'Year', 'Scope'];
+const frames = ['01', '02', '03'];
+---
+
+<BaseLayout title={`${brand.name} — Branding — Shiva`} description={`${brand.name}: branding case study.`}>
+  <SiteHeader back={{ href: '/branding', label: 'Branding' }} />
+  <main class="brand" style={`--brand: ${brand.color}`}>
+    <section class="brand__hero" aria-labelledby="brand-title">
+      <span class="brand__mark rise" style="--i: 0"><BrandMark shape={brand.mark} /></span>
+      <h1 class="brand__name rise" id="brand-title" style="--i: 1">{brand.name}</h1>
+      <p class="brand__tagline rise" style="--i: 2">
+        <span class="brand__tag">[ Template ]</span>{' '}
+        {brand.tagline}
+      </p>
+      <span class="brand__scroll" aria-hidden="true">Scroll</span>
+    </section>
+
+    <section class="brand__body" aria-label="Case study">
+      <dl class="brand__facts">
+        {
+          facts.map((label) => (
+            <div>
+              <dt>{label}</dt>
+              <dd>TBD</dd>
+            </div>
+          ))
+        }
+      </dl>
+      <p class="brand__intro">
+        Placeholder for the story of this brand: the brief, the idea, and how the identity came together.
+      </p>
+      <ul class="brand__gallery" aria-label="Images">
+        {
+          frames.map((n) => (
+            <li class="frame">
+              <span>Image {n}</span>
+            </li>
+          ))
+        }
+      </ul>
+      <a class="brand__next" href={`/branding/${next.slug}`}>
+        <span class="brand__next-label">Next brand</span>
+        <span class="brand__next-name">{next.name}</span>
+      </a>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  /* ── Opening screen: the brand's light (same gradient as the room behind its door, seen up close) ── */
+
+  .brand__hero {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(1rem, 3vh, 1.75rem);
+    min-height: 100vh;
+    min-height: 100svh;
+    padding: var(--gutter);
+    overflow: hidden;
+    isolation: isolate;
+    color: #fff;
+    text-align: center;
+    background: radial-gradient(
+      ellipse 140% 220% at 50% 32%,
+      var(--brand),
+      color-mix(in oklab, var(--brand) 45%, #000) 55%,
+      color-mix(in oklab, var(--brand) 12%, #000)
+    );
+  }
+
+  /* Grain, and a fade into the page below. */
+  .brand__hero::before,
+  .brand__hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .brand__hero::before {
+    background-image: var(--grain);
+    opacity: 0.06;
+  }
+
+  .brand__hero::after {
+    background: linear-gradient(to bottom, transparent 62%, var(--color-bg));
+  }
+
+  .brand__mark {
+    display: block;
+    width: clamp(4.5rem, 12vmin, 8rem);
+    filter: drop-shadow(0 0 1.25rem rgb(255 255 255 / 0.55));
+  }
+
+  .brand__mark :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .brand__name {
+    margin: 0;
+    padding-left: 0.2em; /* balances the trailing letter-spacing */
+    font-size: clamp(1.75rem, 5vw, 4.5rem);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-shadow: 0 2px 24px rgb(0 0 0 / 0.25);
+  }
+
+  .brand__tagline,
+  .brand__scroll {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgb(255 255 255 / 0.8);
+  }
+
+  .brand__tag {
+    color: #fff;
+  }
+
+  .brand__scroll {
+    position: absolute;
+    bottom: var(--gutter);
+    left: 50%;
+    translate: -50% 0;
+    font-size: 0.7rem;
+    color: rgb(255 255 255 / 0.6);
+  }
+
+  /* ── Case study (placeholder) ── */
+
+  .brand__body {
+    display: grid;
+    gap: clamp(2.5rem, 6vw, 5rem);
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: clamp(3rem, 8vw, 6rem) var(--gutter) clamp(4rem, 10vw, 8rem);
+  }
+
+  .brand__facts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+    margin: 0;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .brand__facts dt,
+  .brand__next-label,
+  .frame {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .brand__facts dd {
+    margin: 0.5rem 0 0;
+  }
+
+  .brand__intro {
+    max-width: 34ch;
+    margin: 0;
+    font-size: clamp(1.25rem, 2.4vw, 2rem);
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+  }
+
+  .brand__gallery {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(1rem, 2vw, 1.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .frame {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    aspect-ratio: 4 / 5;
+    padding: 1rem;
+    border: 1px solid var(--color-line);
+    background:
+      radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--brand) 16%, transparent), transparent 70%),
+      rgb(255 255 255 / 0.015);
+  }
+
+  .frame:first-child {
+    grid-column: 1 / -1;
+    aspect-ratio: 16 / 9;
+  }
+
+  .frame::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--grain);
+    opacity: 0.05;
+    pointer-events: none;
+  }
+
+  .brand__next {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--color-line);
+    color: var(--color-fg);
+    text-decoration: none;
+  }
+
+  .brand__next-name {
+    font-size: clamp(1.25rem, 3vw, 2.25rem);
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    transition: translate 500ms var(--ease-out);
+  }
+
+  .brand__next:hover .brand__next-name,
+  .brand__next:focus-visible .brand__next-name {
+    translate: 0.4rem 0;
+  }
+
+  .brand__next:focus-visible {
+    outline: 1px solid var(--color-fg);
+    outline-offset: 0.5rem;
+  }
+
+  @media (max-width: 40rem) {
+    .brand__gallery {
+      grid-template-columns: 1fr;
+    }
+
+    .frame:first-child {
+      grid-column: auto;
+    }
+  }
+
+  /* Entrance: after the page change settles, the mark and name rise in the light. */
+  .rise {
+    animation: rise 1000ms var(--ease-out) backwards;
+    animation-delay: calc(350ms + var(--i, 0) * 120ms);
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      translate: 0 0.75rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise {
+      animation-name: fade;
+    }
+
+    @keyframes fade {
+      from {
+        opacity: 0;
+      }
+    }
+  }
+</style>

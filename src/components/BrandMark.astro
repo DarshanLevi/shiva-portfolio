@@ -1,0 +1,41 @@
+---
+/**
+ * Placeholder brand marks (simple geometry), until the real logos arrive in contents/.
+ * Drawn in currentColor; size it with its container.
+ */
+import type { BrandMarkShape } from '../data/brands';
+
+interface Props {
+  shape: BrandMarkShape;
+}
+
+const { shape } = Astro.props;
+---
+
+<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" aria-hidden="true" focusable="false">
+  {
+    shape === 'ring' && (
+      <>
+        <circle cx="50" cy="50" r="32" />
+        <circle cx="50" cy="50" r="11" fill="currentColor" stroke="none" />
+      </>
+    )
+  }
+  {
+    shape === 'square' && (
+      <>
+        <rect x="20" y="20" width="60" height="60" />
+        <rect x="40" y="40" width="20" height="20" fill="currentColor" stroke="none" />
+      </>
+    )
+  }
+  {
+    shape === 'triangle' && (
+      <>
+        <path d="M50 16 86 80H14Z" stroke-linejoin="round" />
+        <circle cx="50" cy="61" r="8" fill="currentColor" stroke="none" />
+      </>
+    )
+  }
+  {shape === 'bars' && <path d="M18 30h64M18 50h46M18 70h28" stroke-linecap="square" />}
+</svg>

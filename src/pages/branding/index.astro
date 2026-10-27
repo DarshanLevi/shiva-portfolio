@@ -1,0 +1,311 @@
+---
+/**
+ * Branding: a pitch-black hall of white doors (after reference/Four White Doors in the Endless Hall.png):
+ * a rough polished floor that reflects the doors and lights, lights set flat into a rough rock
+ * ceiling, shining down on the doors, seen from a low camera. No words. The doors stand close together in
+ * the middle, with dark space at both ends. Behind each door is a brand. Hover (or focus) opens a
+ * door; clicking walks through it: the hall zooms into the doorway until the brand's light fills
+ * the screen, then the brand's page opens (it starts in that same light). On narrow screens the
+ * hall scrolls sideways and the door in the middle opens by itself.
+ */
+import Door from '../../components/Door.astro';
+import SiteHeader from '../../components/SiteHeader.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { brands } from '../../data/brands';
+import { services } from '../../data/services';
+
+const service = services.find((s) => s.slug === 'branding')!;
+---
+
+<BaseLayout title={`${service.name} — Shiva`} description="Branding work.">
+  <SiteHeader back />
+  <main class="hall" data-hall>
+    <div class="hall__scene" data-hall-scene>
+      <ul class="hall__row" aria-label="Brands" data-hall-row>
+        {brands.map((brand, i) => <Door brand={brand} index={i} />)}
+      </ul>
+      <div class="hall__surfaces" aria-hidden="true">
+        <div class="hall__ceiling"></div>
+        <div class="hall__floor"></div>
+        <div class="hall__grit"></div>
+      </div>
+    </div>
+    <!-- Glossy floors smear reflections vertically: a blur along y only, used by the doors' reflections. -->
+    <svg class="hall__defs" aria-hidden="true" focusable="false">
+      <filter id="floor-smear" x="-5%" y="-5%" width="110%" height="140%">
+        <feGaussianBlur stdDeviation="0.8 10"></feGaussianBlur>
+      </filter>
+    </svg>
+    <h1 class="sr-only">{service.name}</h1>
+  </main>
+</BaseLayout>
+
+<style>
+  .hall {
+    /* The camera, matched to the reference (measured from "Four White Doors in the Endless
+       Hall.png", 1672×940): doors 24.8% of the screen height tall (20.85vh wide; 11.75vw on 16:9
+       and narrower, which is the reference's 11.7% of the width), standing on the foot of the wall
+       at 60.7% of the height, the lights in the ceiling at 27%. The camera is level and almost at
+       floor level (eye at 4% of a door's height: the light panels' perspective puts the vanishing
+       point at about the floor line), and the picture is framed high (eye line at 59.7%), leaving
+       dark ceiling above the lights. The doors stand closer than in the reference (--bay), leaving
+       dark space at both ends. --lens is the focal length (the CSS perspective); planes towards the
+       viewer must stay shorter than it (--depth), and with the eye this low the floor plane must
+       reach almost to the lens to cover the bottom of the screen. */
+    --door-w: clamp(4.5rem, min(11.75vw, 20.85vh), 20rem);
+    --door-h: calc(var(--door-w) * 1.18);
+    --lens: calc(var(--door-w) * 5);
+    --depth: calc(var(--lens) * 0.985);
+    --eye: 59.7%;
+    --eye-h: 0.04;
+    --horizon: calc(var(--eye) + var(--door-h) * var(--eye-h));
+    --wall-h: calc(var(--door-h) * 1.34);
+    --bay: calc(var(--door-w) * 1.7);
+
+    /* Surfaces, as mid-grey textures for `overlay` (grey changes nothing; lighter and darker break
+       up whatever light falls on them). Floor: polished stone, blotchy patches stretched along the
+       floor's depth (so the grazing view doesn't flatten them into wave-like bands), plus a fine
+       grit drawn in screen space for the floor near the camera. Ceiling: rough rock, a noise relief
+       lit from the wall side. */
+    --rough-floor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.06 0.02' numOctaves='3' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0 0 0 0 1'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2.8' intercept='-0.9'/%3E%3CfeFuncG type='linear' slope='2.8' intercept='-0.9'/%3E%3CfeFuncB type='linear' slope='2.8' intercept='-0.9'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    --floor-grit: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.045 0.16' numOctaves='4' seed='13' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0 0 0 0 1'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='1.8' intercept='-0.4'/%3E%3CfeFuncG type='linear' slope='1.8' intercept='-0.4'/%3E%3CfeFuncB type='linear' slope='1.8' intercept='-0.4'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    --rough-rock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='r' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.055' numOctaves='5' seed='9' stitchTiles='stitch'/%3E%3CfeDiffuseLighting surfaceScale='3' diffuseConstant='1' lighting-color='%23fff'%3E%3CfeDistantLight azimuth='90' elevation='45'/%3E%3C/feDiffuseLighting%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='1.25' intercept='-0.38'/%3E%3CfeFuncG type='linear' slope='1.25' intercept='-0.38'/%3E%3CfeFuncB type='linear' slope='1.25' intercept='-0.38'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23r)'/%3E%3C/svg%3E");
+
+    position: relative;
+    height: 100vh;
+    height: 100svh;
+    min-height: 30rem;
+    overflow: hidden;
+    isolation: isolate;
+    background: #000;
+  }
+
+  /* Pitch black: only the lights, the doors and what the floor and ceiling reflect show. This layer
+     is what zooms when walking through a door. */
+  .hall__scene {
+    position: absolute;
+    inset: 0;
+    background: #000;
+  }
+
+  /* The doors, close together in the middle. Each bay knows how far its centre is from the middle
+     of the hall (--dx), so its ceiling light shares the hall's vanishing point. */
+  .hall__row {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .hall__row > :global(.bay) {
+    --dx: calc((var(--i) - 1.5) * var(--bay));
+
+    flex: 0 0 var(--bay);
+  }
+
+  /* Floor and ceiling in true perspective from the eye point, laid over everything with `overlay`:
+     on the black they show nothing; where light and reflections fall they give them the material.
+     --scroll follows the sideways scroll on narrow screens, so the surfaces move with the hall. */
+  .hall__surfaces {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    perspective: var(--lens);
+    perspective-origin: 50% var(--eye);
+    mix-blend-mode: overlay;
+    pointer-events: none;
+  }
+
+  .hall__ceiling,
+  .hall__floor {
+    position: absolute;
+    left: -100%;
+    width: 300%;
+    height: var(--depth);
+    background-position: calc(50% - var(--scroll, 0px)) 0;
+  }
+
+  /* Hinged at the top of the wall, turned flat towards the viewer. */
+  .hall__ceiling {
+    top: calc(var(--horizon) - var(--wall-h) - var(--depth));
+    transform-origin: 50% 100%;
+    transform: rotateX(-90deg);
+    background-image: var(--rough-rock);
+    background-size: calc(var(--door-w) * 3.4);
+  }
+
+  /* Hinged at the foot of the wall, turned flat towards the viewer. The lower the eye, the more
+     the floor is magnified on screen, so its texture is sized from the eye height (keeping the
+     same grain on screen). Near the wall the roughness is faint, so the doors' reflections stay
+     crisp at their base and break up further out (stops relative to the lens, which is what maps
+     floor depth to screen height). */
+  .hall__floor {
+    top: var(--horizon);
+    transform-origin: 50% 0;
+    transform: rotateX(90deg);
+    background-image: var(--rough-floor);
+    background-size: calc(var(--door-h) * var(--eye-h) * 13);
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      rgb(0 0 0 / 0.04),
+      rgb(0 0 0 / 0.15) calc(var(--lens) * 0.9),
+      #000 calc(var(--lens) * 0.968)
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      rgb(0 0 0 / 0.04),
+      rgb(0 0 0 / 0.15) calc(var(--lens) * 0.9),
+      #000 calc(var(--lens) * 0.968)
+    );
+  }
+
+  /* Near-floor grit: flat on the screen (not in perspective), so it stays sharp where the floor
+     plane is most magnified; fades in from a third of the way down the floor. Blended onto the
+     floor texture inside the overlay group, so on the black floor it still shows nothing. */
+  .hall__grit {
+    position: absolute;
+    top: var(--horizon);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background-image: var(--floor-grit);
+    background-size: calc(var(--door-w) * 1.6);
+    background-position: calc(50% - var(--scroll, 0px)) 0;
+    mix-blend-mode: overlay;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 35%, #000 90%);
+    mask-image: linear-gradient(to bottom, transparent 35%, #000 90%);
+  }
+
+  .hall__defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+  }
+
+  /* Narrow or portrait screens: the hall scrolls sideways, one door at a time. */
+  @media (max-aspect-ratio: 4/5), (max-width: 40rem) {
+    .hall {
+      --door-w: min(52vw, 27svh, 15rem);
+      --lens: calc(var(--door-w) * 6);
+      --bay: calc(var(--door-w) * 1.5);
+    }
+
+    .hall__row {
+      justify-content: flex-start;
+      padding: 0 calc(50% - var(--bay) / 2);
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+    }
+
+    .hall__row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .hall__row > :global(.bay) {
+      --dx: calc(var(--i) * var(--bay) - var(--scroll, 0px));
+
+      scroll-snap-align: center;
+    }
+  }
+
+  /* Short screens (a phone on its side): fit the hall to the screen. */
+  @media (max-height: 30rem) {
+    .hall {
+      min-height: 0;
+    }
+  }
+</style>
+
+<script>
+  // Walking through a door: the hall zooms into the doorway until the brand's light fills the
+  // screen, then the brand's page opens (it starts in that same light, so the change is seamless).
+  // With reduced motion, or a modified click (new tab etc.), the door is just a link.
+  const OPEN_MS = 650; // a closed door (e.g. opened by keyboard) swings open before walking in
+  const ZOOM_MS = 1100;
+  const PAST_LEAVES = 2.4; // zoom past the open leaves so only the room's light is left
+
+  const hall = document.querySelector<HTMLElement>('[data-hall]');
+  const scene = document.querySelector<HTMLElement>('[data-hall-scene]');
+  const row = document.querySelector<HTMLElement>('[data-hall-row]');
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const narrow = matchMedia('(max-aspect-ratio: 4/5), (max-width: 40rem)'); // keep in step with the CSS
+
+  if (hall && scene && row) {
+    const doors = Array.from(row.querySelectorAll<HTMLAnchorElement>('[data-door]'));
+    let entering = false;
+
+    const enter = async (door: HTMLAnchorElement) => {
+      entering = true;
+      const alreadyOpen = door.matches(':hover, :focus-visible, .is-centered');
+      door.classList.add('is-open');
+      hall.classList.add('is-entering');
+      if (!alreadyOpen) await new Promise((resolve) => setTimeout(resolve, OPEN_MS));
+
+      const doorway = door.querySelector<HTMLElement>('.door__body .door__opening')!.getBoundingClientRect();
+      const box = scene.getBoundingClientRect();
+      const cx = doorway.left + doorway.width / 2;
+      const cy = doorway.top + doorway.height / 2;
+      const scale = Math.max(innerWidth / doorway.width, innerHeight / doorway.height) * PAST_LEAVES;
+
+      // Scale about the doorway's centre while moving it to the middle of the screen.
+      scene.style.transformOrigin = `${cx - box.left}px ${cy - box.top}px`;
+      const zoom = scene.animate(
+        [
+          { transform: 'none' },
+          { transform: `translate(${innerWidth / 2 - cx}px, ${innerHeight / 2 - cy}px) scale(${scale})` },
+        ],
+        { duration: ZOOM_MS, easing: 'cubic-bezier(0.6, 0, 0.85, 0.4)', fill: 'forwards' },
+      );
+      await zoom.finished;
+      location.assign(door.href);
+    };
+
+    for (const door of doors) {
+      door.addEventListener('click', (event) => {
+        if (entering || reduceMotion.matches) return;
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        void enter(door);
+      });
+    }
+
+    // Narrow screens: scrolling the hall sideways moves the floor and ceiling with it (at the wall
+    // they move with the doors; nearer parts move faster, as when walking along a real hall), and
+    // keeps each light's vanishing point at the middle of the screen.
+    row.addEventListener('scroll', () => hall.style.setProperty('--scroll', `${row.scrollLeft}px`), {
+      passive: true,
+    });
+
+    // Narrow screens: the door in the middle of the hall opens by itself.
+    const centred = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          entry.target.querySelector('[data-door]')?.classList.toggle('is-centered', entry.isIntersecting && narrow.matches);
+        }
+      },
+      { root: row, rootMargin: '0px -42% 0px -42%' },
+    );
+    const watch = () => {
+      centred.disconnect();
+      for (const bay of Array.from(row.children)) centred.observe(bay);
+    };
+    watch();
+    narrow.addEventListener('change', watch);
+
+    // Coming back with the browser's back button can restore this page mid-zoom: reset it.
+    addEventListener('pageshow', (event) => {
+      if (!event.persisted) return;
+      entering = false;
+      for (const animation of scene.getAnimations()) animation.cancel();
+      scene.style.transformOrigin = '';
+      hall.classList.remove('is-entering');
+      for (const door of doors) door.classList.remove('is-open');
+      watch();
+    });
+  }
+</script>
