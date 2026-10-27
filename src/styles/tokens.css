@@ -1,6 +1,6 @@
 /*
  * Design tokens: the one place for colour, type and motion values.
- * Palette is monochrome, per reference/ (black, white, greys). The cyberpunk accent is still TBD.
+ * Palette is monochrome (black, white, greys). Glow is the accent: white light, as in the loader.
  */
 :root {
   /* Colour */
@@ -8,10 +8,18 @@
   --color-fg: #f2f2f2;
   --color-muted: #8c8c8c;
   --color-line: rgb(255 255 255 / 0.12);
+  --glow: 0 0 0.75rem rgb(255 255 255 / 0.45);
 
-  /* Type: system stacks until the fonts are chosen in the hero step */
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  /* Type: Geist + Geist Mono (self-hosted via @fontsource-variable, imported in BaseLayout) */
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+
+  /* Texture: fine grain with a faint vertical streak (noise stretched along y). Used by the
+     loader and the hero, at a few % opacity. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8 0.12' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  /* Space */
+  --gutter: clamp(1.25rem, 4vw, 3rem); /* page edge padding */
 
   /* Motion */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);

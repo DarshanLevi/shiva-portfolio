@@ -74,3 +74,30 @@ html.js-loading {
     transition: opacity 600ms linear;
   }
 }
+
+/*
+ * Page changes. Browsers with cross-document view transitions (Chrome/Edge, Safari 18.2+)
+ * crossfade between pages, and elements sharing a view-transition-name (the header, a service
+ * name → its page title) glide into place. Other browsers just change page.
+ */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-group(*) {
+  animation-duration: 650ms;
+  animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 450ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

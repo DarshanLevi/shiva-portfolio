@@ -1,42 +1,31 @@
 ---
 /**
- * Bulb loader (reference/Loading.jpeg).
+ * Ring loader (started from reference/Loading.jpeg; the bulb's base and gap were removed
+ * at the user's request, leaving a full glowing circle).
  *
- * The glowing glass of the bulb is the loading bar: light travels along the arc from its
- * left end, over the top, to its right end, then drains away in the same direction and
- * loops. Once the page has loaded and the minimum time has passed, it stops fully lit,
- * blooms, and fades into the page. Timing lives in the <script> below.
+ * The ring is the loading bar: light enters at the bottom, travels clockwise all the way
+ * round back to the bottom, then drains away in the same direction and loops. Once the page
+ * has loaded and the minimum time has passed, it stops fully lit, blooms, and fades into
+ * the page. Timing lives in the <script> below.
  *
  * Geometry is in viewBox units, measured from the reference (1 unit = 1px of that image).
  */
 const CX = 60;
 const CY = 60;
-const R = 40; // radius of the glass arc
-const STROKE = 10; // thickness of the arc and of the base pieces
-const GAP = 92; // opening at the bottom of the arc: degrees between the two path ends
+const R = 40; // radius of the ring
+const STROKE = 10; // thickness of the ring
 
-// Angles run clockwise from 3 o'clock (SVG's y axis points down), so 90° is straight down.
-const point = (deg: number) => {
-  const rad = (deg * Math.PI) / 180;
-  return `${+(CX + R * Math.cos(rad)).toFixed(3)} ${+(CY + R * Math.sin(rad)).toFixed(3)}`;
-};
-const arc = `M ${point(90 + GAP / 2)} A ${R} ${R} 0 1 1 ${point(90 - GAP / 2)}`; // left end → right end
-const arcLength = +((R * (360 - GAP) * Math.PI) / 180).toFixed(3);
-
-// Screw base: two threads and the contact nub.
-const base = [
-  { width: 36, y: 95 },
-  { width: 34, y: 110 },
-  { width: 14, y: 125 },
-];
+// Two half-circles, starting at the bottom and running clockwise (up the left side first).
+const ring = `M ${CX} ${CY + R} A ${R} ${R} 0 1 1 ${CX} ${CY - R} A ${R} ${R} 0 1 1 ${CX} ${CY + R}`;
+const ringLength = +(2 * Math.PI * R).toFixed(3);
 ---
 
 <div class="loader" data-loader role="status">
   <span class="sr-only">Loading</span>
-  <svg class="bulb" data-bulb viewBox="0 0 120 150" aria-hidden="true" focusable="false">
+  <svg class="ring" data-ring viewBox="0 0 120 120" aria-hidden="true" focusable="false">
     <defs>
-      <!-- Room light; falloff matched to the reference's brightness at 1.5–4 arc radii. -->
-      <radialGradient id="bulb-ambient">
+      <!-- Room light; falloff matched to the reference's brightness at 1.5–4 ring radii. -->
+      <radialGradient id="ring-ambient">
         <stop offset="0" stop-color="#fff" stop-opacity="0.15"></stop>
         <stop offset="0.3" stop-color="#fff" stop-opacity="0.115"></stop>
         <stop offset="0.5" stop-color="#fff" stop-opacity="0.08"></stop>
@@ -44,7 +33,7 @@ const base = [
         <stop offset="0.85" stop-color="#fff" stop-opacity="0.015"></stop>
         <stop offset="1" stop-color="#fff" stop-opacity="0"></stop>
       </radialGradient>
-      <filter id="bulb-glow" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <filter id="ring-glow" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
         <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="halo"></feGaussianBlur>
         <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="bloom"></feGaussianBlur>
         <feMerge>
@@ -53,28 +42,24 @@ const base = [
           <feMergeNode in="SourceGraphic"></feMergeNode>
         </feMerge>
       </filter>
-      <filter id="bulb-flare" x="-75%" y="-75%" width="250%" height="250%" color-interpolation-filters="sRGB">
+      <filter id="ring-flare" x="-75%" y="-75%" width="250%" height="250%" color-interpolation-filters="sRGB">
         <feGaussianBlur stdDeviation="14"></feGaussianBlur>
       </filter>
     </defs>
 
-    <circle class="bulb__ambient" data-ambient cx={CX} cy={CY} r="150" fill="url(#bulb-ambient)"></circle>
-    <path class="bulb__track" d={arc} stroke-width={STROKE} stroke-linecap="round"></path>
-    <path class="bulb__flare" data-flare d={arc} stroke-width={STROKE} stroke-linecap="round" filter="url(#bulb-flare)"
-    ></path>
+    <circle class="ring__ambient" data-ambient cx={CX} cy={CY} r="150" fill="url(#ring-ambient)"></circle>
+    <path class="ring__track" d={ring} stroke-width={STROKE}></path>
+    <path class="ring__flare" data-flare d={ring} stroke-width={STROKE} filter="url(#ring-flare)"></path>
     <path
-      class="bulb__light"
+      class="ring__light"
       data-light
-      data-length={arcLength}
-      d={arc}
+      data-length={ringLength}
+      d={ring}
       stroke-width={STROKE}
       stroke-linecap="round"
-      stroke-dasharray={`${arcLength} ${arcLength * 2}`}
-      stroke-dashoffset={arcLength}
-      filter="url(#bulb-glow)"></path>
-    <g class="bulb__base">
-      {base.map(({ width, y }) => <rect x={CX - width / 2} y={y} width={width} height={STROKE} rx={STROKE / 2} />)}
-    </g>
+      stroke-dasharray={`${ringLength} ${ringLength * 2}`}
+      stroke-dashoffset={ringLength}
+      filter="url(#ring-glow)"></path>
   </svg>
 </div>
 
@@ -98,48 +83,45 @@ const base = [
     content: '';
     position: absolute;
     inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8 0.12' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-image: var(--grain);
     opacity: 0.06;
     pointer-events: none;
   }
 
-  .bulb {
+  /* Same scale as the old bulb (its 150-unit height was clamp(150px, 26vmin, 230px)). */
+  .ring {
     width: auto;
-    height: clamp(150px, 26vmin, 230px);
-    aspect-ratio: 120 / 150;
+    height: clamp(120px, 20.8vmin, 184px);
+    aspect-ratio: 1;
     overflow: visible;
   }
 
-  .bulb__ambient {
-    opacity: 0.35; /* dim between sweeps; the script brightens it as the arc fills */
+  .ring__ambient {
+    opacity: 0.08; /* a barely-there haze at rest; the script brightens it as the ring fills */
     transform-box: fill-box;
     transform-origin: center;
   }
 
-  .bulb__track {
+  .ring__track {
     fill: none;
     stroke: rgb(255 255 255 / 0.07);
   }
 
-  .bulb__light,
-  .bulb__flare {
+  .ring__light,
+  .ring__flare {
     fill: none;
     stroke: #fff;
     opacity: 0;
-  }
-
-  .bulb__base {
-    fill: #666;
   }
 </style>
 
 <script>
   // Timing, in ms. The loader always shows for at least MIN_DURATION_MS (a deliberate delay
-  // so it is seen), then leaves the next time the bulb is fully lit after the page has loaded.
+  // so it is seen), then leaves the next time the ring is fully lit after the page has loaded.
   const MIN_DURATION_MS = 3000;
   const MAX_WAIT_MS = 8000; // stop waiting for slow assets after this
-  const FILL_MS = 1500; // light travels from the left end of the arc to the right end
-  const DRAIN_MS = 750; // light leaves the arc, in the same direction
+  const FILL_MS = 1500; // light travels once round the ring, bottom to bottom, clockwise
+  const DRAIN_MS = 750; // light leaves the ring, in the same direction
   const LIT_MS = 450; // "lights on" bloom once loading is done
   const LEAVE_MS = 800; // loader fades out while the page fades in
 
@@ -150,7 +132,10 @@ const base = [
   const main = document.querySelector('main');
   const loader = document.querySelector<HTMLElement>('[data-loader]');
 
-  if (loader) {
+  if (loader && !root.classList.contains('js-loading')) {
+    // BaseLayout's bootstrap skipped the loader (e.g. arriving from another page of the site).
+    loader.remove();
+  } else if (loader) {
     if (main) main.inert = true;
     play(loader)
       .catch((error) => console.error('[loader]', error))
@@ -158,7 +143,7 @@ const base = [
   }
 
   async function play(loader: HTMLElement) {
-    const bulb = loader.querySelector<SVGSVGElement>('[data-bulb]')!;
+    const ring = loader.querySelector<SVGSVGElement>('[data-ring]')!;
     const light = loader.querySelector<SVGPathElement>('[data-light]')!;
     const flare = loader.querySelector<SVGPathElement>('[data-flare]')!;
     const ambient = loader.querySelector<SVGCircleElement>('[data-ambient]')!;
@@ -174,7 +159,7 @@ const base = [
     pageLoaded.then(() => (loaded = true));
     const isReady = () => (loaded && performance.now() >= MIN_DURATION_MS) || performance.now() >= MAX_WAIT_MS;
 
-    // Moves the light along the arc (via its dash offset); the room light follows it.
+    // Moves the light along the ring (via its dash offset); the room light follows it.
     const sweep = (from: number, to: number, duration: number, glowFrom: number, glowTo: number) => {
       const timing = { duration, easing: EASE_IN_OUT, fill: 'forwards' } as const;
       return Promise.all([
@@ -184,7 +169,7 @@ const base = [
     };
 
     if (reduceMotion) {
-      // No sweeping: the bulb simply lights up, then the page fades in.
+      // No sweeping: the ring simply lights up, then the page fades in.
       light.style.strokeDashoffset = '0';
       const timing = { duration: 600, fill: 'forwards' } as const;
       light.animate({ opacity: [0, 1] }, timing);
@@ -195,11 +180,11 @@ const base = [
       ]);
     } else {
       while (true) {
-        // Fill: the light enters at the left end and travels to the right end.
+        // Fill: the light enters at the bottom and travels clockwise all the way round.
         light.animate({ opacity: [0, 1] }, { duration: FILL_MS * 0.15, fill: 'forwards' });
         await sweep(length, 0, FILL_MS, dim, 1);
         if (isReady()) break;
-        // Drain: the tail follows, so the light leaves through the right end.
+        // Drain: the tail follows round, so the light leaves at the bottom again.
         light.animate({ opacity: [1, 0] }, { duration: DRAIN_MS * 0.2, delay: DRAIN_MS * 0.8, fill: 'forwards' });
         await sweep(0, -length, DRAIN_MS, 1, dim);
       }
@@ -214,7 +199,7 @@ const base = [
 
     // Leave: the loader fades out while the page rises in underneath.
     const leave = { duration: LEAVE_MS, easing: EASE_IN_OUT, fill: 'forwards' } as const;
-    if (!reduceMotion) bulb.animate({ transform: ['scale(1)', 'scale(1.06)'] }, { ...leave, easing: EASE_OUT });
+    if (!reduceMotion) ring.animate({ transform: ['scale(1)', 'scale(1.06)'] }, { ...leave, easing: EASE_OUT });
     const fade = loader.animate({ opacity: [1, 0] }, leave);
     setTimeout(() => root.classList.add('is-loaded'), LEAVE_MS * 0.3);
     await fade.finished;

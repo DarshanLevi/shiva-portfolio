@@ -1,15 +1,23 @@
 ---
+import '@fontsource-variable/geist/wght.css';
+import '@fontsource-variable/geist-mono/wght.css';
 import '../styles/tokens.css';
 import '../styles/global.css';
+import Loader from '../components/Loader.astro';
 
 interface Props {
   title?: string;
   description?: string;
+  /** Show the ring loader on this page (home only, for now). */
+  loader?: boolean;
 }
 
 // TODO(content): confirm name, title and description from contents/.
-const { title = 'Shiva — Portfolio', description = 'Portfolio — graphic design, branding and video editing.' } =
-  Astro.props;
+const {
+  title = 'Shiva — Portfolio',
+  description = 'Portfolio — graphic design, branding and video editing.',
+  loader = false,
+} = Astro.props;
 ---
 
 <!doctype html>
@@ -23,19 +31,32 @@ const { title = 'Shiva — Portfolio', description = 'Portfolio — graphic desi
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <!--
-      Loader bootstrap. Runs before first paint so the loader is on screen immediately.
-      Failsafe: if the loader script never finishes (e.g. a JS error), reveal the page anyway.
-      Without JS this never runs, so the loader stays hidden and the page is visible.
-    -->
-    <script is:inline>
-      document.documentElement.classList.add('js-loading');
-      setTimeout(function () {
-        document.documentElement.classList.remove('js-loading');
-      }, 15000);
-    </script>
+    {
+      loader && (
+        <script is:inline>
+          // Loader bootstrap. Runs before first paint so the loader is on screen immediately.
+          // It plays on a fresh visit or a reload, but not when arriving from another page of
+          // the site (or via back/forward). Failsafe: if the loader script never finishes,
+          // reveal the page anyway. Without JS this never runs and the page is simply visible.
+          (function () {
+            var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+            var type = nav ? nav.type : 'navigate';
+            var fromSite = false;
+            try {
+              fromSite = !!document.referrer && new URL(document.referrer).origin === location.origin;
+            } catch (e) {}
+            if (type === 'back_forward' || (type === 'navigate' && fromSite)) return;
+            document.documentElement.classList.add('js-loading');
+            setTimeout(function () {
+              document.documentElement.classList.remove('js-loading');
+            }, 15000);
+          })();
+        </script>
+      )
+    }
   </head>
   <body>
+    {loader && <Loader />}
     <slot />
   </body>
 </html>
