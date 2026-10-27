@@ -226,8 +226,8 @@ const service = services.find((s) => s.slug === 'branding')!;
   // screen, then the brand's page opens (it starts in that same light, so the change is seamless).
   // With reduced motion, or a modified click (new tab etc.), the door is just a link.
   const OPEN_MS = 650; // a closed door (e.g. opened by keyboard) swings open before walking in
-  const ZOOM_MS = 1100;
-  const PAST_LEAVES = 2.4; // zoom past the open leaves so only the room's light is left
+  const ZOOM_MS = 1700;
+  const PAST_LEAVES = 1.1; // zoom until the open doorway fills the screen, then fade to black
 
   const hall = document.querySelector<HTMLElement>('[data-hall]');
   const scene = document.querySelector<HTMLElement>('[data-hall-scene]');
@@ -252,14 +252,34 @@ const service = services.find((s) => s.slug === 'branding')!;
       const cy = doorway.top + doorway.height / 2;
       const scale = Math.max(innerWidth / doorway.width, innerHeight / doorway.height) * PAST_LEAVES;
 
-      // Scale about the doorway's centre while moving it to the middle of the screen.
-      scene.style.transformOrigin = `${cx - box.left}px ${cy - box.top}px`;
-      const zoom = scene.animate(
+      // Walking in: a real zoom into the doorway, then a soft fade to black (the gallery opens out
+      // of that black). Kept smooth on the graphics card: the scene is promoted to its own layer
+      // (`will-change`) so the browser scales one ready-made picture of it instead of re-drawing
+      // every blur and blend at each step; the zoom stops at ~4-5x, not 10x, and the softness it
+      // gets from being scaled is part of the look, with a little real blur added at the end.
+      const fade = document.createElement('div');
+      fade.id = 'door-fade';
+      fade.setAttribute('aria-hidden', 'true');
+      fade.style.cssText = 'position:fixed;inset:0;z-index:50;background:#000;opacity:0;pointer-events:none';
+      document.body.append(fade);
+      scene.style.willChange = 'transform, filter';
+      scene.style.transformOrigin = `${cx}px ${cy}px`;
+      const timing = { duration: ZOOM_MS, easing: 'cubic-bezier(0.5, 0.05, 0.75, 0.45)', fill: 'forwards' } as const;
+      scene.animate(
         [
-          { transform: 'none' },
-          { transform: `translate(${innerWidth / 2 - cx}px, ${innerHeight / 2 - cy}px) scale(${scale})` },
+          { transform: 'none', filter: 'blur(0px)', offset: 0 },
+          { transform: 'none', filter: 'blur(0px)', offset: 0.08 },
+          { transform: `translate(${innerWidth / 2 - cx}px, ${innerHeight / 2 - cy}px) scale(${scale})`, filter: 'blur(7px)', offset: 1 },
         ],
-        { duration: ZOOM_MS, easing: 'cubic-bezier(0.6, 0, 0.85, 0.4)', fill: 'forwards' },
+        timing,
+      );
+      const zoom = fade.animate(
+        [
+          { opacity: 0, offset: 0 },
+          { opacity: 0, offset: 0.5 },
+          { opacity: 1, offset: 1 },
+        ],
+        { ...timing, easing: 'cubic-bezier(0.4, 0, 0.6, 1)' },
       );
       await zoom.finished;
       location.assign(door.href);
@@ -303,6 +323,8 @@ const service = services.find((s) => s.slug === 'branding')!;
       entering = false;
       for (const animation of scene.getAnimations()) animation.cancel();
       scene.style.transformOrigin = '';
+      document.getElementById('door-fade')?.remove();
+      scene.style.willChange = '';
       hall.classList.remove('is-entering');
       for (const door of doors) door.classList.remove('is-open');
       watch();
